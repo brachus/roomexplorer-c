@@ -1,0 +1,380 @@
+
+#include "inc.h"
+#include "str_num.h"
+#include "rpg_err.h"
+#include "rpg_parse_base.h"
+#include "rpg_parse_token.h"
+
+void add_token(struct token* tokens, int type, int line, int col, char* fname)
+{
+	if (!tokens->tok || !tokens->tok_first)
+	{
+		tokens->tok_first = malloc(sizeof(struct token_l));
+		tokens->tok = tokens->tok_first;
+	}
+	else
+	{
+		tokens->tok->next = malloc(sizeof(struct token_l));
+		tokens->tok = tokens->tok->next;
+	}
+	tokens->tok->type = type;
+	tokens->tok->line = line;
+	tokens->tok->col = col;
+	tokens->tok->dat_str = malloc(3 * (sizeof(struct str)));
+	tokens->tok->fn = malloc(65);
+	strcpy(tokens->tok->fn, fname);
+}
+
+void parse_tokenize(struct str *fn, struct token* tokens)
+{
+	
+	
+	
+	char *fname = str_to_cstr(fn);
+	
+	FILE *fp = fopen(fname,"r");
+	
+	if (!fp)
+		vm_err(fname,-1,-1, "non-existent file.");
+	
+	struct str macro_dat[2];
+	int macro_idx = 0;
+	
+	char ch, md, ch_type;
+	
+	int hold, set_hold, tok_line, tok_col, tok_item_idx;
+	
+	tok_line = 1;
+	tok_col = 0;
+	
+	hold = 0;
+	set_hold = 0;
+	
+	tok_item_idx = 0;
+	
+	md = P_OPEN;
+		
+	while (ch != EOF)
+	{
+		if (hold == 0)
+		{
+			ch = getc(fp);
+			ch_type = char_identify(ch);
+		}
+				
+		switch (md)
+		{
+		case P_OPEN:
+			switch (ch_type)
+			{
+			case NUMERAL:
+				add_token(
+					tokens,
+					T_INT,
+					tok_line,
+					tok_col,
+					fname );
+				str_append_char( &(tokens->tok->dat_str[tok_item_idx]), ch);
+					/* append char to string data in newly created token. */
+				
+				md = P_INT;
+				break;
+			case SYMBOL:
+				if (ch == '#')
+					md = P_MACRO;
+				else if (ch == '/')
+					md = P_COM_GET_STAR;
+				else
+				{
+					add_token(
+					tokens,
+					T_SYM,
+					tok_line,
+					tok_col,
+					fname );
+					str_append_char( &(tokens->tok->dat_str[tok_item_idx]), ch);
+					
+					if (ch == '.')
+						md = P_DOT;
+				}
+				break;
+			case LETTER:				
+				add_token(
+					tokens,
+					T_NAME,
+					tok_line,
+					tok_col,
+					fname );
+				str_append_char( &(tokens->tok->dat_str[0]), ch);
+				md = P_NAME;
+				
+				
+				break;
+			case QUOTE:
+				add_token(
+					tokens,
+					T_STR,
+					tok_line,
+					tok_col,
+					fname );
+				
+				if (ch == '\'')
+					md = P_SINGLEQUOTE;
+				else
+					md = P_DOUBLEQUOTE;
+				
+				break;
+			default:
+				break;
+			}
+			break;
+			
+		case P_INT:
+			if (ch_type == NUMERAL)
+				str_append_char( &(tokens->tok->dat_str[tok_item_idx]), ch);
+			else if (ch_type == SYMBOL)
+			{
+				if (ch == '.')
+				{
+					str_append_char( &(tokens->tok->dat_str[tok_item_idx]), ch);
+					tokens->tok->type = T_FLOAT;
+					md = P_FLOAT;
+				}
+				else
+				{
+					tokens->tok->dat_int = atoi(str_to_cstr(&(tokens->tok->dat_str[tok_item_idx])));
+						/* convert string data in token to integer data */
+					tok_item_idx = 0;
+					
+					set_hold = 1; /* reread char to get symbol token. */
+					
+					md = P_OPEN;
+				}
+			}
+			else if (ch_type == LETTER)
+				vm_err(fname, tok_line, tok_col, "expected numeral, got letter.");
+			else
+			{
+				tokens->tok->dat_int = atoi(str_to_cstr(&(tokens->tok->dat_str[tok_item_idx])));
+				tok_item_idx = 0;
+				set_hold = 1;	
+				md = P_OPEN;
+			}
+			break;
+		case P_NAME:
+			if (ch_type == LETTER || ch_type == NUMERAL)
+				str_append_char( &(tokens->tok->dat_str[tok_item_idx]), ch);
+			else if (ch_type == SYMBOL)
+			{
+				if (ch == '.')
+				{
+					tok_item_idx++; /* move on to next str dat in token*/
+					
+					md = P_NAME_DOT;
+				}
+				else
+				{
+					tok_item_idx = 0;
+					set_hold = 1;
+					md = P_OPEN;
+				}
+			}
+			else
+			{
+				tok_item_idx = 0;
+				set_hold = 1;
+				md = P_OPEN;
+			}
+			break;
+		case P_NAME_DOT:
+			if (ch_type == LETTER)
+			{
+				str_append_char( &(tokens->tok->dat_str[tok_item_idx]), ch);
+				md = P_NAME;
+			}
+			else 
+				vm_err(fname, tok_line, tok_col, "unexpected name after \".\"");
+			break;
+		case P_DOT:
+			if (ch_type == LETTER)
+			{
+				tokens->tok->type = T_NAME;
+				
+				 /* for ".xx", have first string be only a null character*/
+				tokens->tok->dat_str[0].first->dat = '\0';
+				
+				tok_item_idx++;
+				
+				str_append_char(&(tokens->tok->dat_str[tok_item_idx]), ch);
+				
+				md = P_NAME;
+			}
+			else if (ch_type == NUMERAL)
+			{
+				tokens->tok->type = T_FLOAT;
+				
+				str_append_char(&(tokens->tok->dat_str[tok_item_idx]), ch);
+				
+				md = P_FLOAT;
+			}
+			else
+			{
+				set_hold = 1;
+				md = P_OPEN;
+			}
+			break;
+		case P_DOUBLEQUOTE:
+			if (ch == '\"')
+				md = P_OPEN;
+			else if (ch == '\\')
+				md = P_DOUBLEQUOTE_ESC;
+			else
+				str_append_char(&(tokens->tok->dat_str[tok_item_idx]), ch);
+			break;
+		case P_SINGLEQUOTE:
+			if (ch == '\'')
+				md = P_OPEN;
+			else if (ch == '\\')
+				md = P_SINGLEQUOTE_ESC;
+			else
+				str_append_char(&(tokens->tok->dat_str[tok_item_idx]), ch);
+			break;
+		case P_DOUBLEQUOTE_ESC:
+			if (ch == '\"' || ch == '\'')
+				str_append_char(&(tokens->tok->dat_str[tok_item_idx]), ch);
+			md = P_DOUBLEQUOTE;
+			break;
+		case P_SINGLEQUOTE_ESC:
+			if (ch == '\"' || ch == '\'')
+				str_append_char(&(tokens->tok->dat_str[tok_item_idx]), ch);
+			md = P_SINGLEQUOTE;
+			break;
+		case P_FLOAT:
+			if (ch_type == NUMERAL)
+				str_append_char( &(tokens->tok->dat_str[tok_item_idx]), ch);
+			else if (ch_type == SYMBOL)
+			{
+				if (ch == '.')
+				{
+					vm_err(fname, tok_line, tok_col, "too many dots in float.");
+				}
+				else
+				{
+					tokens->tok->dat_float = atof(str_to_cstr(&(tokens->tok->dat_str[tok_item_idx])));
+						/* convert string data in token to float data */
+					tok_item_idx = 0;
+					
+					set_hold = 1; /* reread char to get symbol token. */
+					
+					md = P_OPEN;
+				}
+			}
+			else if (ch_type == LETTER)
+				vm_err(fname, tok_line, tok_col, "expected numeral, got letter.");
+			else
+			{
+				tokens->tok->dat_float = atof(str_to_cstr(&(tokens->tok->dat_str[tok_item_idx])));
+				tok_item_idx = 0;
+				set_hold = 1;	
+				md = P_OPEN;
+			}
+			break;
+		case P_MACRO:
+			if (ch == ' ')
+			{
+				macro_idx++;
+				if (macro_idx == 2)
+					vm_err(fname, tok_line, tok_col, "bad macro identifier.");
+			}
+			else if (ch == '\n')
+			{
+				if (str_cmp(&macro_dat[0], &macro_dat[1]) && macro_idx == 1)
+					parse_tokenize(&macro_dat[1], tokens);
+				else
+					vm_err(fname, tok_line, tok_col, "bad macro identifier.");
+				
+				macro_idx = 0;
+				str_del(&macro_dat[0]);
+				str_del(&macro_dat[1]);
+			}
+			else
+				str_append_char( &(macro_dat[macro_idx]), ch);
+			
+			break;
+		case P_COM_GET_STAR:
+			
+			if (ch == '*')
+				md = P_COMMENT;
+			else
+			{
+				vm_warn(fname, tok_line, tok_col, "ignoring stray \"/\".");
+				md = P_OPEN;
+			}
+			
+			break;
+		case P_COMMENT:
+		
+			if (ch == '*')
+				md = P_COM_GET_SLASH;
+			
+			break;
+		case P_COM_GET_SLASH:
+			
+			if (ch == '/')
+				md = P_OPEN;
+			else if (ch == '*')
+				md = P_COM_GET_SLASH;
+				/*no change*/
+			else
+				md = P_COMMENT;
+			
+			break;
+		default:
+			break;
+		}
+		
+		if (hold == 0)
+		{
+			tok_col++;
+			
+			if (ch == '\n')
+			{
+				tok_col = 0;
+				tok_line++;
+			}
+		}
+		else
+			hold = 0;
+		if (set_hold)
+		{
+			hold = 1;
+			set_hold = 0;
+		}
+		
+	}
+	
+	/* if failure hasn't happened, address state of parse_mode at EOF */
+    switch (md)
+    {
+	case P_INT:
+		tokens->tok->dat_int = atoi(str_to_cstr(&(tokens->tok->dat_str[tok_item_idx])));
+		break;
+		
+	case P_FLOAT:
+		tokens->tok->dat_float = atof(str_to_cstr(&(tokens->tok->dat_str[tok_item_idx])));
+		break;
+	
+	case P_NAME_DOT:
+	case P_DOT:
+	case P_DOUBLEQUOTE:
+	case P_SINGLEQUOTE:
+		vm_err(fname, tok_line, tok_col, "unexpected EOF.");
+		break;
+		
+	default:
+		break;
+    }
+    
+    fclose(fp);
+	
+}

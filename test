@@ -1,0 +1,11 @@
+#include test1
+
+game main
+{
+	.testvar = 123;
+
+	init
+	{
+		println('hello, world'); 
+	}
+}
