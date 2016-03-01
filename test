@@ -3,6 +3,7 @@
 game main
 {
 	.testvar = 123;
+	.tmpfloat = 3.141592654
 
 	init
 	{

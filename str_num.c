@@ -7,6 +7,7 @@
 struct str new_str(char *in)
 {
 	int i;
+	
 	struct str a;
 	a.length = 0;
 
@@ -26,13 +27,15 @@ struct str new_str(char *in)
 		a.last->dat = in[i];
 		a.length++;
 	}
+	
+	a.last->next = NULL;
 			
 	return a;
 };
 
 void str_append_char(struct str* in_str, char in)
 {
-	if (!in_str->first)
+	if (!in_str->first || in_str->length == 0)
 	{
 		in_str->first = malloc( sizeof(struct str_l) );
 		in_str->last = in_str->first;
@@ -46,6 +49,7 @@ void str_append_char(struct str* in_str, char in)
 	}
 		
 	in_str->last->dat = in;
+	in_str->last->next = NULL;
 	
 	in_str->length++;
 }
@@ -124,6 +128,13 @@ void str_del(struct str *in)
 	
 }
 
+void str_init(struct str *in)
+{
+	in->length = 0;
+	in->first = NULL;
+	in->last = NULL;
+}
+
 int str_cmp(struct str *a, struct str *b)
 {
 	struct str_l *tmpa;
@@ -144,7 +155,27 @@ int str_cmp(struct str *a, struct str *b)
 		tmpb = tmpb->next;
 	}
 	
-	return 0;
+	return 1; /* return true even if lengths aren't equal, for now. */
+}
+
+int str_cmp_cstr(struct str *a, char *b)
+{
+	struct str_l *tmpa;
+	int tmpb = 0;
+	
+	tmpa = a->first;
+	
+	while (b[tmpb] != '\0' && tmpa != NULL)
+	{
+		if (tmpa->dat != b[tmpb])
+			return 0;
+		
+		tmpa = tmpa->next;
+		tmpb++;
+	}
+	
+	
+	return 1;
 }
 
 int chtoi(char ch)

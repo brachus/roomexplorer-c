@@ -12,11 +12,8 @@ int main(void)
 	
 	fn = new_str("test");
 	
-	printf("opening ");
-	str_print(&fn);
-	printf(" ...\n");
-	
 	struct token tokens;
+	token_init(&tokens);
 	
 	  parse_tokenize(&fn, &tokens);
 	
@@ -24,13 +21,39 @@ int main(void)
 	tmp = tokens.tok_first;
 	while (tmp != NULL)
 	{
-		printf("%d: ",tmp->line);
-		str_print(&(tmp->dat_str[0]));
-		printf(" ");
-		str_print(&(tmp->dat_str[1]));
-		printf(" ");
-		str_print(&(tmp->dat_str[2]));
-		printf("\n");
+		
+		printf("ln %d: ",tmp->line);
+		
+		switch(tmp->type)
+		{
+		case T_INT:
+			printf("int %d\n",tmp->dat_int);
+			break;
+		case T_FLOAT:
+			printf("float %d\n",tmp->dat_int);
+			break;
+		case T_STR:
+			printf("str ");
+			str_print(&(tmp->dat_str[0]));
+			printf("\n");
+			break;
+		case T_NAME:
+			printf("name ");
+			str_print(&(tmp->dat_str[0]));
+			printf(" ");
+			str_print(&(tmp->dat_str[1]));
+			printf(" ");
+			str_print(&(tmp->dat_str[2]));
+			printf("\n");
+			break;
+		case T_SYM:
+			printf("sym ");
+			str_print(&(tmp->dat_str[0]));
+			printf("\n");
+			break;
+		default:
+			break;
+		}
 		
 		tmp = tmp->next;
 	}

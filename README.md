@@ -1,4 +1,4 @@
-> Overview
+# Overview
 
 This is a version of roomexplorer.js for C.  It will use SDL for
 graphics/sound/etc.

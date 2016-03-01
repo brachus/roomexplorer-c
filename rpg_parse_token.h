@@ -6,6 +6,7 @@
 #define T_STR	2
 #define T_NAME	3
 #define T_SYM	4
+#define T_EOF	5
 #define T_ILLEGAL	6
 
 
@@ -46,6 +47,8 @@ struct token
 	struct token_l *tok_first;
 	struct token_l *tok;
 };
+
+void token_init(struct token* tokens);
 
 void add_token(
 	struct token* tokens,

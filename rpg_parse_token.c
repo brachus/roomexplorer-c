@@ -5,9 +5,15 @@
 #include "rpg_parse_base.h"
 #include "rpg_parse_token.h"
 
+void token_init(struct token* tokens)
+{
+	tokens->tok_first = NULL;
+	tokens->tok = NULL;
+}
+
 void add_token(struct token* tokens, int type, int line, int col, char* fname)
 {
-	if (!tokens->tok || !tokens->tok_first)
+	if (!tokens->tok_first)
 	{
 		tokens->tok_first = malloc(sizeof(struct token_l));
 		tokens->tok = tokens->tok_first;
@@ -20,24 +26,31 @@ void add_token(struct token* tokens, int type, int line, int col, char* fname)
 	tokens->tok->type = type;
 	tokens->tok->line = line;
 	tokens->tok->col = col;
+	
 	tokens->tok->dat_str = malloc(3 * (sizeof(struct str)));
+	str_init( &tokens->tok->dat_str[0]);
+	str_init( &tokens->tok->dat_str[1]);
+	str_init( &tokens->tok->dat_str[2]);
+	
 	tokens->tok->fn = malloc(65);
 	strcpy(tokens->tok->fn, fname);
+	
+	tokens->tok->next = NULL;
 }
 
 void parse_tokenize(struct str *fn, struct token* tokens)
 {
 	
-	
-	
 	char *fname = str_to_cstr(fn);
+	
+	printf("parsing \"%s\" ...\n", fname);
 	
 	FILE *fp = fopen(fname,"r");
 	
 	if (!fp)
 		vm_err(fname,-1,-1, "non-existent file.");
 	
-	struct str macro_dat[2];
+	struct str *macro_dat = malloc(2 * sizeof(struct str));
 	int macro_idx = 0;
 	
 	char ch, md, ch_type;
@@ -61,6 +74,10 @@ void parse_tokenize(struct str *fn, struct token* tokens)
 			ch = getc(fp);
 			ch_type = char_identify(ch);
 		}
+		
+		if (ch == EOF)
+			break;
+		
 				
 		switch (md)
 		{
@@ -87,18 +104,19 @@ void parse_tokenize(struct str *fn, struct token* tokens)
 				else
 				{
 					add_token(
-					tokens,
-					T_SYM,
-					tok_line,
-					tok_col,
-					fname );
+						tokens,
+						T_SYM,
+						tok_line,
+						tok_col,
+						fname );
 					str_append_char( &(tokens->tok->dat_str[tok_item_idx]), ch);
 					
 					if (ch == '.')
 						md = P_DOT;
 				}
 				break;
-			case LETTER:				
+			case LETTER:
+				
 				add_token(
 					tokens,
 					T_NAME,
@@ -283,19 +301,24 @@ void parse_tokenize(struct str *fn, struct token* tokens)
 			if (ch == ' ')
 			{
 				macro_idx++;
-				if (macro_idx == 2)
-					vm_err(fname, tok_line, tok_col, "bad macro identifier.");
+				if (macro_idx > 1)
+					vm_err(fname, tok_line, tok_col, "too many names for macro");
 			}
 			else if (ch == '\n')
 			{
-				if (str_cmp(&macro_dat[0], &macro_dat[1]) && macro_idx == 1)
+								
+				if (str_cmp_cstr(&macro_dat[0], "include") && macro_idx == 1)
 					parse_tokenize(&macro_dat[1], tokens);
 				else
 					vm_err(fname, tok_line, tok_col, "bad macro identifier.");
-				
+								
 				macro_idx = 0;
+				
+				md = P_OPEN;
+				
 				str_del(&macro_dat[0]);
 				str_del(&macro_dat[1]);
+				
 			}
 			else
 				str_append_char( &(macro_dat[macro_idx]), ch);
@@ -376,5 +399,5 @@ void parse_tokenize(struct str *fn, struct token* tokens)
     }
     
     fclose(fp);
-	
+
 }
