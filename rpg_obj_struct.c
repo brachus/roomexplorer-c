@@ -48,7 +48,9 @@ void print_var_val(struct var *in)
 		printf("%f", in->dat_float);
 		break;
 	case V_STR:
+		printf("\"");
 		str_print(in->dat_str);
+		printf("\"");
 		break;
 	case V_NAME:
 		str_print(in->dat_str);
@@ -97,8 +99,8 @@ void idnt_init(struct idnt *in)
 	in->type = IDNT_NULL;
 	in->idx = -1;
 	
-	str_init(&in->obj_name);
-	str_init(&in->var_name);
+	in->obj_name = create_str();
+	in->var_name = create_str();
 	
 	in->use_var = NULL;
 	in->next = NULL;
@@ -117,11 +119,11 @@ struct idnt *new_idnt(void)
 
 void func_init(struct func *in)
 {
-	in->id = NULL;
-	in->label = NULL;
-	str_init(&in->label_name);
-	in->obj_idx = NULL;
-	str_init(&in->obj_name);
+	in->id = -1;
+	in->label = -1;
+	in->label_name = create_str();
+	in->obj_idx = -1;
+	in->obj_name = create_str();
 	in->next = NULL;
 	
 }
@@ -139,8 +141,8 @@ struct func *new_ifunc(void)
 
 void obj_init(struct obj *in)
 {
-	str_init(&in->type);
-	str_init(&in->name);
+	in->type = create_str();
+	in->name = create_str();
 	
 	in->vars = NULL;
 	

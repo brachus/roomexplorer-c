@@ -27,6 +27,7 @@ int main(void)
 	
 	testvar = parse_literal_expr(&tokens);
 	
+	printf("\n");
 	
 	print_var(testvar);
 	

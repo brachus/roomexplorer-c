@@ -10,6 +10,6 @@
 #define P_SND_GETSTR		39
 #define P_SND_GETSTR_CLOSE	40
 
-
+#define MAX_LIST_NESTS		8
 
 struct var *parse_literal_expr(struct token *tokens);

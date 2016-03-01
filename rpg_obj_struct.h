@@ -79,10 +79,10 @@ struct idnt
 	int idx;
 	
 	/* object name (in case of run-tine obj creation) */
-	struct str obj_name;
+	struct str *obj_name;
 	
 	/* var name (goes with obj idx) */
-	struct str var_name;
+	struct str *var_name;
 	
 	/* for when argument contains var data */
 	struct var *use_var;
@@ -95,20 +95,20 @@ struct func
 	int id;
 	
 	int label;
-	struct str label_name;
+	struct str *label_name;
 	
 	/* idx to object (as opperand).  may be NO_OPP if no opperand obj */
 	int obj_idx;
 	/* may be needed for object creation. */
-	struct str obj_name; 
+	struct str *obj_name; 
 	
 	struct func *next; /* NULL if last. */
 };
 
 struct obj
 {
-	struct str type;
-	struct str name;
+	struct str *type;
+	struct str *name;
 	
 	/* vars list */
 	struct var *vars;  /* NULL if empty*/
