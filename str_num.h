@@ -24,6 +24,7 @@ struct num
 };
 
 struct str new_str(char *in);
+struct str *create_str();
 void str_append_char(struct str* in_str, char in);
 void str_append_cstr(struct str* in_str, char *in);
 void str_print(struct str* in);
@@ -33,4 +34,5 @@ void str_del(struct str *in);
 void str_init(struct str *in);
 int str_cmp(struct str *a, struct str *b);
 int str_cmp_cstr(struct str *a, char *b);
+struct str *str_cpy(struct str *in);
 int chtoi(char ch);

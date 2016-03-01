@@ -4,6 +4,8 @@
 #include "rpg_err.h"
 #include "rpg_parse_base.h"
 #include "rpg_parse_token.h"
+#include "rpg_obj_struct.h"
+#include "rpg_parse_expr.h"
 
 
 int main(void)
@@ -13,50 +15,21 @@ int main(void)
 	fn = new_str("test");
 	
 	struct token tokens;
+	
 	token_init(&tokens);
 	
-	  parse_tokenize(&fn, &tokens);
+	parse_tokenize(&fn, &tokens);
 	
-	struct token_l *tmp;
-	tmp = tokens.tok_first;
-	while (tmp != NULL)
-	{
-		
-		printf("ln %d: ",tmp->line);
-		
-		switch(tmp->type)
-		{
-		case T_INT:
-			printf("int %d\n",tmp->dat_int);
-			break;
-		case T_FLOAT:
-			printf("float %d\n",tmp->dat_int);
-			break;
-		case T_STR:
-			printf("str ");
-			str_print(&(tmp->dat_str[0]));
-			printf("\n");
-			break;
-		case T_NAME:
-			printf("name ");
-			str_print(&(tmp->dat_str[0]));
-			printf(" ");
-			str_print(&(tmp->dat_str[1]));
-			printf(" ");
-			str_print(&(tmp->dat_str[2]));
-			printf("\n");
-			break;
-		case T_SYM:
-			printf("sym ");
-			str_print(&(tmp->dat_str[0]));
-			printf("\n");
-			break;
-		default:
-			break;
-		}
-		
-		tmp = tmp->next;
-	}
+	print_tokens(&tokens);
+	
+	
+	struct var *testvar;
+	
+	testvar = parse_literal_expr(&tokens);
+	
+	
+	print_var(testvar);
+	
 	
 	return 0;
 	

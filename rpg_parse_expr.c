@@ -5,6 +5,8 @@
 #include "rpg_err.h"
 #include "rpg_parse_base.h"
 #include "rpg_parse_token.h"
+#include "rpg_obj_struct.h"
+#include "rpg_parse_expr.h"
 
 
 #define P_EOF 				32
@@ -18,12 +20,13 @@
 #define P_SND_GETSTR_CLOSE	40
 
 
-/*								var struct needs to be used for this.    */
-
-void parse_literal_expr(struct token *tokens)
+/* creates new var from literal expression (tokens) */
+struct var *parse_literal_expr(struct token *tokens)
 {	
+	
 	int md, ttype, tminus, hold;
 	struct token_l *tmp;
+	struct var *nvar;
 	
 	add_token(tokens, T_EOF, 0, 0, "");
 	
@@ -36,23 +39,59 @@ void parse_literal_expr(struct token *tokens)
 	
 	while (tmp != NULL)
 	{
-		
+		printf("%d\n",md);
 		switch(md)
 		{
 		case P_OPEN:
 			switch(tmp->type)
 			{
-			case T_NAME:
-				vm_err(tmp->fname, tmp->line, tmp->col, "names are not allowed.");
-				break;
+			
 			case T_INT:
+				nvar = new_var();
+				nvar->type = V_INT;
+				nvar->dat_int = tmp->dat_int;
+				md = P_EOF;
+				break;
 			case T_FLOAT:
-			case T_STR:
+				nvar = new_var();
+				nvar->type = V_FLOAT;
+				nvar->dat_float = tmp->dat_float;
+				md = P_EOF;
+			case T_NAME:
+				nvar = new_var();
+				nvar->type = V_STR;
+				nvar->dat_str = str_cpy(&tmp->dat_str[0]);
 				
+				if (tmp->dat_str[1].length > 0)
+					nvar->dat_str_1 = str_cpy(&tmp->dat_str[1]);
+				
+				if (tmp->dat_str[2].length > 0)
+					nvar->dat_str_2 = str_cpy(&tmp->dat_str[2]);
+				
+				md = P_EOF;
+				break;
+			case T_STR:
+				nvar = new_var();
+				nvar->type = V_STR;
+				nvar->dat_str = str_cpy(tmp->dat_str);
+				md = P_EOF;
+				break;
+			case T_SYM:
+				break;
+			default:
+				break;
 			}
-			default;
-		break:
-			default;
+			break;
+		case P_EOF:
+			if (tmp->type != T_EOF)
+				vm_err(tmp->fn, tmp->line, tmp->col, "expected end of literal.");
+			break;
+		default:
+			break;
 		}
+		
+		tmp = tmp->next;
 	}
+	
+	return nvar;
 }

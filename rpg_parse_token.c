@@ -11,6 +11,50 @@ void token_init(struct token* tokens)
 	tokens->tok = NULL;
 }
 
+void print_tokens(struct token* tokens)
+{
+	struct token_l *tmp;
+	tmp = tokens->tok_first;
+	while (tmp != NULL)
+	{
+		printf("%s:%d:%d: \t", tmp->fn, tmp->line, tmp->col);
+		
+		switch(tmp->type)
+		{
+		case T_INT:
+			printf("int %d\n",tmp->dat_int);
+			break;
+		case T_FLOAT:
+			printf("float %d\n",tmp->dat_int);
+			break;
+		case T_STR:
+			printf("str ");
+			str_print(&(tmp->dat_str[0]));
+			printf("\n");
+			break;
+		case T_NAME:
+			printf("name ");
+			str_print(&(tmp->dat_str[0]));
+			printf(" ");
+			str_print(&(tmp->dat_str[1]));
+			printf(" ");
+			str_print(&(tmp->dat_str[2]));
+			printf("\n");
+			break;
+		case T_SYM:
+			printf("sym ");
+			str_print(&(tmp->dat_str[0]));
+			printf("\n");
+			break;
+		default:
+			break;
+		}
+		
+		tmp = tmp->next;
+	}
+	
+}
+
 void add_token(struct token* tokens, int type, int line, int col, char* fname)
 {
 	if (!tokens->tok_first)
@@ -42,9 +86,7 @@ void parse_tokenize(struct str *fn, struct token* tokens)
 {
 	
 	char *fname = str_to_cstr(fn);
-	
-	printf("parsing \"%s\" ...\n", fname);
-	
+		
 	FILE *fp = fopen(fname,"r");
 	
 	if (!fp)
@@ -186,6 +228,9 @@ void parse_tokenize(struct str *fn, struct token* tokens)
 			{
 				if (ch == '.')
 				{
+					if (tok_item_idx == 2)
+						vm_err(fname, tok_line, tok_col, "too many sub names.");
+					
 					tok_item_idx++; /* move on to next str dat in token*/
 					
 					md = P_NAME_DOT;

@@ -33,6 +33,18 @@ struct str new_str(char *in)
 	return a;
 };
 
+/* this should eventually replace new_str() */
+struct str *create_str()
+{
+	struct str *n;
+	
+	n = malloc(sizeof(struct str));
+	
+	str_init(n);
+	
+	return n;
+};
+
 void str_append_char(struct str* in_str, char in)
 {
 	if (!in_str->first || in_str->length == 0)
@@ -121,10 +133,7 @@ void str_del(struct str *in)
 		tmp = n;
 	}
 	
-	in->first = NULL;
-	in->last = NULL;
-	
-	in->length = 0;
+	str_init(in);
 	
 }
 
@@ -176,6 +185,20 @@ int str_cmp_cstr(struct str *a, char *b)
 	
 	
 	return 1;
+}
+
+struct str *str_cpy(struct str *in)
+{
+	struct str *cpy = create_str();
+	struct str_l *tmp = in->first;
+	
+	while (tmp != NULL)
+	{
+		str_append_char(cpy, tmp->dat);
+		tmp = tmp->next;
+	}
+	
+	return cpy;
 }
 
 int chtoi(char ch)

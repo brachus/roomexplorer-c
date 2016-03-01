@@ -50,6 +50,8 @@ struct token
 
 void token_init(struct token* tokens);
 
+void print_tokens(struct token* tokens);
+
 void add_token(
 	struct token* tokens,
 	int type,
