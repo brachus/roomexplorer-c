@@ -1,6 +1,5 @@
 
 
-
 #define T_INT	0
 #define T_FLOAT	1
 #define T_STR	2
@@ -8,7 +7,6 @@
 #define T_SYM	4
 #define T_EOF	5
 #define T_ILLEGAL	6
-
 
 #define P_OPEN		0
 #define P_INT		1
@@ -32,7 +30,7 @@ struct token_l
 	
 	int type;
 	
-	struct str *dat_str; /* for compound names (xx.xx) */
+	struct str **dat_str; /* for compound names (xx.xx) */
 		/* for now, in ".xx", the first name will be a \0 character */
 	int dat_int;
 	float dat_float;
@@ -44,21 +42,14 @@ struct token_l
 
 struct token
 {
-	struct token_l *tok_first;
-	struct token_l *tok;
+	struct token_l *first;
+	struct token_l *last;
 };
 
 void token_init(struct token* tokens);
-
 void print_tokens(struct token* tokens);
-
-void add_token(
-	struct token* tokens,
-	int type,
-	int line,
-	int col,
-	char* fname);
-	
-void parse_tokenize(
-	struct str *fn,
-	struct token* tokens);
+void add_token(struct token* tokens, int type, int line, int col, char* fname);
+struct token_l *new_token();
+struct token_l *cpy_token(struct token_l *in);
+int token_nnames(struct token_l *in);
+void parse_tokenize(struct str *fn, struct token* tokens);

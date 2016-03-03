@@ -31,7 +31,7 @@ struct var *parse_literal_expr(struct token *tokens)
 	tminus = 1;
 	hold = 0;
 	
-	tmp = tokens->tok_first;
+	tmp = tokens->first;
 	
 	while (tmp != NULL)
 	{
@@ -54,25 +54,25 @@ struct var *parse_literal_expr(struct token *tokens)
 				md = P_EOF;
 			case T_NAME:
 				nvar = new_var();
-				nvar->type = V_STR;
-				nvar->dat_str = str_cpy(&tmp->dat_str[0]);
+				nvar->type = V_NAME;
+				nvar->dat_str = str_cpy(tmp->dat_str[0]);
 				
-				if (tmp->dat_str[1].length > 0)
-					nvar->dat_str_1 = str_cpy(&tmp->dat_str[1]);
+				if (tmp->dat_str[1]->length > 0)
+					nvar->dat_str_1 = str_cpy(tmp->dat_str[1]);
 				
-				if (tmp->dat_str[2].length > 0)
-					nvar->dat_str_2 = str_cpy(&tmp->dat_str[2]);
+				if (tmp->dat_str[2]->length > 0)
+					nvar->dat_str_2 = str_cpy(tmp->dat_str[2]);
 				
 				md = P_EOF;
 				break;
 			case T_STR:
 				nvar = new_var();
 				nvar->type = V_STR;
-				nvar->dat_str = str_cpy(tmp->dat_str);
+				nvar->dat_str = str_cpy(tmp->dat_str[0]);
 				md = P_EOF;
 				break;
 			case T_SYM:
-				if ( str_cmp_cstr(tmp->dat_str,"[") )
+				if ( str_cmp_cstr(tmp->dat_str[0],"[") )
 				{
 					nvar = new_var();
 					nvar->type = V_LIST;
@@ -124,14 +124,14 @@ struct var *parse_literal_expr(struct token *tokens)
 				break;
 			case T_STR:
 				map[map_lvl]->type = V_STR;
-				map[map_lvl]->dat_str = str_cpy(tmp->dat_str);
+				map[map_lvl]->dat_str = str_cpy(tmp->dat_str[0]);
 				tminus = 1;
 				break;
 			case T_NAME:
 				vm_err(tmp->fn, tmp->line, tmp->col, "names aren't supported in lists.");
 				break;
 			case T_SYM:
-				if ( str_cmp_cstr(tmp->dat_str,"]") )
+				if ( str_cmp_cstr(tmp->dat_str[0],"]") )
 				{
 					
 					/* step down list level */
@@ -143,7 +143,7 @@ struct var *parse_literal_expr(struct token *tokens)
 					
 					md = P_ARRAY_GET_SYM;
 				}
-				else if ( str_cmp_cstr(tmp->dat_str,"[") )
+				else if ( str_cmp_cstr(tmp->dat_str[0],"[") )
 				{
 					if (map[map_lvl] == NULL)
 					{
@@ -163,7 +163,7 @@ struct var *parse_literal_expr(struct token *tokens)
 					if (map_lvl >= MAX_LIST_NESTS)
 						vm_err(tmp->fn, tmp->line, tmp->col, "too nested lists.");
 				}
-				else if ( str_cmp_cstr(tmp->dat_str,"-") )
+				else if ( str_cmp_cstr(tmp->dat_str[0],"-") )
 					tminus = -1;
 				else
 					vm_err(tmp->fn, tmp->line, tmp->col, "unexpected symbol.");
@@ -174,7 +174,7 @@ struct var *parse_literal_expr(struct token *tokens)
 		case P_ARRAY_GET_SYM:
 			if (tmp->type == T_SYM)
 			{
-				if ( str_cmp_cstr(tmp->dat_str,"]") )
+				if ( str_cmp_cstr(tmp->dat_str[0],"]") )
 				{
 					
 					/* step down list level */
@@ -185,7 +185,7 @@ struct var *parse_literal_expr(struct token *tokens)
 						md = P_EOF;
 					
 				}
-				else if ( str_cmp_cstr(tmp->dat_str,","))
+				else if ( str_cmp_cstr(tmp->dat_str[0],","))
 				{
 					md = P_ARRAY_GET_ITEM;
 				}

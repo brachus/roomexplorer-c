@@ -31,6 +31,7 @@ void str_print(struct str* in);
 char str_idx(struct str* in, int idx);
 char *str_to_cstr(struct str* in);
 void str_del(struct str *in);
+void free_str(struct str *in);
 void str_init(struct str *in);
 int str_cmp(struct str *a, struct str *b);
 int str_cmp_cstr(struct str *a, char *b);

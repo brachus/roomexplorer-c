@@ -7,14 +7,14 @@
 
 void token_init(struct token* tokens)
 {
-	tokens->tok_first = NULL;
-	tokens->tok = NULL;
+	tokens->first = NULL;
+	tokens->last = NULL;
 }
 
 void print_tokens(struct token* tokens)
 {
 	struct token_l *tmp;
-	tmp = tokens->tok_first;
+	tmp = tokens->first;
 	while (tmp != NULL)
 	{
 		printf("%s:%d:%d: \t", tmp->fn, tmp->line, tmp->col);
@@ -29,21 +29,21 @@ void print_tokens(struct token* tokens)
 			break;
 		case T_STR:
 			printf("str ");
-			str_print(&(tmp->dat_str[0]));
+			str_print(tmp->dat_str[0]);
 			printf("\n");
 			break;
 		case T_NAME:
 			printf("name ");
-			str_print(&(tmp->dat_str[0]));
+			str_print(tmp->dat_str[0]);
 			printf(" ");
-			str_print(&(tmp->dat_str[1]));
+			str_print(tmp->dat_str[1]);
 			printf(" ");
-			str_print(&(tmp->dat_str[2]));
+			str_print(tmp->dat_str[2]);
 			printf("\n");
 			break;
 		case T_SYM:
 			printf("sym ");
-			str_print(&(tmp->dat_str[0]));
+			str_print(tmp->dat_str[0]);
 			printf("\n");
 			break;
 		default:
@@ -57,29 +57,77 @@ void print_tokens(struct token* tokens)
 
 void add_token(struct token* tokens, int type, int line, int col, char* fname)
 {
-	if (!tokens->tok_first)
+	if (!tokens->first)
 	{
-		tokens->tok_first = malloc(sizeof(struct token_l));
-		tokens->tok = tokens->tok_first;
+		tokens->first = new_token();
+		tokens->last = tokens->first;
 	}
 	else
 	{
-		tokens->tok->next = malloc(sizeof(struct token_l));
-		tokens->tok = tokens->tok->next;
+		tokens->last->next = new_token();
+		tokens->last = tokens->last->next;
 	}
-	tokens->tok->type = type;
-	tokens->tok->line = line;
-	tokens->tok->col = col;
 	
-	tokens->tok->dat_str = malloc(3 * (sizeof(struct str)));
-	str_init( &tokens->tok->dat_str[0]);
-	str_init( &tokens->tok->dat_str[1]);
-	str_init( &tokens->tok->dat_str[2]);
+	tokens->last->type = type;
+	tokens->last->line = line;
+	tokens->last->col = col;
 	
-	tokens->tok->fn = malloc(65);
-	strcpy(tokens->tok->fn, fname);
+	strcpy(tokens->last->fn, fname);
 	
-	tokens->tok->next = NULL;
+}
+
+struct token_l *new_token()
+{
+	struct token_l *new = malloc(sizeof(struct token_l));
+	
+	new->dat_str = malloc(3 * (sizeof(struct str *)));
+	new->dat_str[0] = create_str();
+	new->dat_str[1] = create_str();
+	new->dat_str[2] = create_str();
+	
+	new->fn = malloc(65);
+	
+	new->next = NULL;
+	
+	return new;
+}
+
+struct token_l *cpy_token(struct token_l *in)
+{
+	struct token_l *cpy = new_token();
+	
+	cpy->type = in->type;
+	
+	free_str(cpy->dat_str[0]);
+	cpy->dat_str[0] = str_cpy(in->dat_str[0]);
+	free_str(cpy->dat_str[1]);
+	cpy->dat_str[1] = str_cpy(in->dat_str[1]);
+	free_str(cpy->dat_str[2]);
+	cpy->dat_str[2] = str_cpy(in->dat_str[2]);
+	
+	cpy->dat_int = in->dat_int;
+	cpy->dat_float = in->dat_float;
+	
+	cpy->line = in->line;
+	cpy->col = in->col;
+	strcpy(cpy->fn, in->fn);
+	
+	return cpy;
+	
+};
+
+int token_nnames(struct token_l *in)
+{
+	int a = 0;
+	if (in->type == T_NAME)
+	{
+		if (in->dat_str[1]->length > 0 )
+			a = 2;
+		if (in->dat_str[1]->length > 0 )
+			a++;
+	}
+	
+	return a;
 }
 
 void parse_tokenize(struct str *fn, struct token* tokens)
@@ -133,7 +181,7 @@ void parse_tokenize(struct str *fn, struct token* tokens)
 					tok_line,
 					tok_col,
 					fname );
-				str_append_char( &(tokens->tok->dat_str[tok_item_idx]), ch);
+				str_append_char( tokens->last->dat_str[tok_item_idx], ch);
 					/* append char to string data in newly created token. */
 				
 				md = P_INT;
@@ -151,7 +199,7 @@ void parse_tokenize(struct str *fn, struct token* tokens)
 						tok_line,
 						tok_col,
 						fname );
-					str_append_char( &(tokens->tok->dat_str[tok_item_idx]), ch);
+					str_append_char( tokens->last->dat_str[tok_item_idx], ch);
 					
 					if (ch == '.')
 						md = P_DOT;
@@ -165,7 +213,7 @@ void parse_tokenize(struct str *fn, struct token* tokens)
 					tok_line,
 					tok_col,
 					fname );
-				str_append_char( &(tokens->tok->dat_str[0]), ch);
+				str_append_char( tokens->last->dat_str[0], ch);
 				md = P_NAME;
 				
 				
@@ -191,18 +239,18 @@ void parse_tokenize(struct str *fn, struct token* tokens)
 			
 		case P_INT:
 			if (ch_type == NUMERAL)
-				str_append_char( &(tokens->tok->dat_str[tok_item_idx]), ch);
+				str_append_char( tokens->last->dat_str[tok_item_idx], ch);
 			else if (ch_type == SYMBOL)
 			{
 				if (ch == '.')
 				{
-					str_append_char( &(tokens->tok->dat_str[tok_item_idx]), ch);
-					tokens->tok->type = T_FLOAT;
+					str_append_char( tokens->last->dat_str[tok_item_idx], ch);
+					tokens->last->type = T_FLOAT;
 					md = P_FLOAT;
 				}
 				else
 				{
-					tokens->tok->dat_int = atoi(str_to_cstr(&(tokens->tok->dat_str[tok_item_idx])));
+					tokens->last->dat_int = atoi(str_to_cstr(tokens->last->dat_str[tok_item_idx]));
 						/* convert string data in token to integer data */
 					tok_item_idx = 0;
 					
@@ -215,7 +263,7 @@ void parse_tokenize(struct str *fn, struct token* tokens)
 				vm_err(fname, tok_line, tok_col, "expected numeral, got letter.");
 			else
 			{
-				tokens->tok->dat_int = atoi(str_to_cstr(&(tokens->tok->dat_str[tok_item_idx])));
+				tokens->last->dat_int =atoi(str_to_cstr(tokens->last->dat_str[tok_item_idx]));
 				tok_item_idx = 0;
 				set_hold = 1;	
 				md = P_OPEN;
@@ -223,7 +271,7 @@ void parse_tokenize(struct str *fn, struct token* tokens)
 			break;
 		case P_NAME:
 			if (ch_type == LETTER || ch_type == NUMERAL)
-				str_append_char( &(tokens->tok->dat_str[tok_item_idx]), ch);
+				str_append_char( tokens->last->dat_str[tok_item_idx], ch);
 			else if (ch_type == SYMBOL)
 			{
 				if (ch == '.')
@@ -252,7 +300,7 @@ void parse_tokenize(struct str *fn, struct token* tokens)
 		case P_NAME_DOT:
 			if (ch_type == LETTER)
 			{
-				str_append_char( &(tokens->tok->dat_str[tok_item_idx]), ch);
+				str_append_char( tokens->last->dat_str[tok_item_idx], ch);
 				md = P_NAME;
 			}
 			else 
@@ -261,22 +309,22 @@ void parse_tokenize(struct str *fn, struct token* tokens)
 		case P_DOT:
 			if (ch_type == LETTER)
 			{
-				tokens->tok->type = T_NAME;
+				tokens->last->type = T_NAME;
 				
 				 /* for ".xx", have first string be only a null character*/
-				tokens->tok->dat_str[0].first->dat = '\0';
+				tokens->last->dat_str[0]->first->dat = '\0';
 				
 				tok_item_idx++;
 				
-				str_append_char(&(tokens->tok->dat_str[tok_item_idx]), ch);
+				str_append_char( tokens->last->dat_str[tok_item_idx], ch);
 				
 				md = P_NAME;
 			}
 			else if (ch_type == NUMERAL)
 			{
-				tokens->tok->type = T_FLOAT;
+				tokens->last->type = T_FLOAT;
 				
-				str_append_char(&(tokens->tok->dat_str[tok_item_idx]), ch);
+				str_append_char( tokens->last->dat_str[tok_item_idx], ch);
 				
 				md = P_FLOAT;
 			}
@@ -292,7 +340,7 @@ void parse_tokenize(struct str *fn, struct token* tokens)
 			else if (ch == '\\')
 				md = P_DOUBLEQUOTE_ESC;
 			else
-				str_append_char(&(tokens->tok->dat_str[tok_item_idx]), ch);
+				str_append_char( tokens->last->dat_str[tok_item_idx], ch);
 			break;
 		case P_SINGLEQUOTE:
 			if (ch == '\'')
@@ -300,30 +348,28 @@ void parse_tokenize(struct str *fn, struct token* tokens)
 			else if (ch == '\\')
 				md = P_SINGLEQUOTE_ESC;
 			else
-				str_append_char(&(tokens->tok->dat_str[tok_item_idx]), ch);
+				str_append_char( tokens->last->dat_str[tok_item_idx], ch);
 			break;
 		case P_DOUBLEQUOTE_ESC:
 			if (ch == '\"' || ch == '\'')
-				str_append_char(&(tokens->tok->dat_str[tok_item_idx]), ch);
+				str_append_char( tokens->last->dat_str[tok_item_idx], ch);
 			md = P_DOUBLEQUOTE;
 			break;
 		case P_SINGLEQUOTE_ESC:
 			if (ch == '\"' || ch == '\'')
-				str_append_char(&(tokens->tok->dat_str[tok_item_idx]), ch);
+				str_append_char( tokens->last->dat_str[tok_item_idx], ch);
 			md = P_SINGLEQUOTE;
 			break;
 		case P_FLOAT:
 			if (ch_type == NUMERAL)
-				str_append_char( &(tokens->tok->dat_str[tok_item_idx]), ch);
+				str_append_char( tokens->last->dat_str[tok_item_idx], ch);
 			else if (ch_type == SYMBOL)
 			{
 				if (ch == '.')
-				{
 					vm_err(fname, tok_line, tok_col, "too many dots in float.");
-				}
 				else
 				{
-					tokens->tok->dat_float = atof(str_to_cstr(&(tokens->tok->dat_str[tok_item_idx])));
+					tokens->last->dat_float = atof(str_to_cstr(tokens->last->dat_str[tok_item_idx]));
 						/* convert string data in token to float data */
 					tok_item_idx = 0;
 					
@@ -336,7 +382,7 @@ void parse_tokenize(struct str *fn, struct token* tokens)
 				vm_err(fname, tok_line, tok_col, "expected numeral, got letter.");
 			else
 			{
-				tokens->tok->dat_float = atof(str_to_cstr(&(tokens->tok->dat_str[tok_item_idx])));
+				tokens->last->dat_float = atof(str_to_cstr(tokens->last->dat_str[tok_item_idx]));
 				tok_item_idx = 0;
 				set_hold = 1;	
 				md = P_OPEN;
@@ -425,11 +471,11 @@ void parse_tokenize(struct str *fn, struct token* tokens)
     switch (md)
     {
 	case P_INT:
-		tokens->tok->dat_int = atoi(str_to_cstr(&(tokens->tok->dat_str[tok_item_idx])));
+		tokens->last->dat_int = atoi(str_to_cstr(tokens->last->dat_str[tok_item_idx]));
 		break;
 		
 	case P_FLOAT:
-		tokens->tok->dat_float = atof(str_to_cstr(&(tokens->tok->dat_str[tok_item_idx])));
+		tokens->last->dat_float = atof(str_to_cstr(tokens->last->dat_str[tok_item_idx]));
 		break;
 	
 	case P_NAME_DOT:

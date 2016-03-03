@@ -60,6 +60,7 @@ struct var
 	 * any var data in function args is contained within the idnt struct.
 	 */
 	struct var *next; /* NULL if last. */
+	struct var *last;
 	
 };
 
@@ -88,6 +89,7 @@ struct idnt
 	struct var *use_var;
 	
 	struct idnt *next; /* for next arg.  NULL if last */
+	struct idnt *last;
 };
 
 struct func
@@ -103,6 +105,7 @@ struct func
 	struct str *obj_name; 
 	
 	struct func *next; /* NULL if last. */
+	struct func *last;
 };
 
 struct obj
@@ -117,6 +120,8 @@ struct obj
 	struct func *init; /* NULL if empty*/
 	struct func *body;
 	struct func *term;
+	
+	struct obj *next;
 };
 
 struct obj_dat
@@ -127,17 +132,18 @@ struct obj_dat
 
 void var_init(struct var *in);
 struct var *new_var(void);
+void free_var(struct var *in);
+int var_search_str(struct var *vars, struct str *find);
+void var_add_str(struct var *vars, struct str *add);
+void add_var(struct var *vars);
 void print_var_val(struct var *in);
 void print_var(struct var *in);
-
 void idnt_init(struct idnt *in);
 struct idnt *new_idnt(void);
-
 void func_init(struct func *in);
 struct func *new_func(void);
-
 void obj_init(struct obj *in);
 struct obj *new_obj(void);
-
 void obj_dat_init(struct obj_dat *in);
-
+void add_obj(struct obj_dat *in);
+void obj_add_var(struct obj *in);

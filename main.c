@@ -10,21 +10,20 @@
 
 int main(void)
 {
-	struct str fn;
+	struct str *fn = create_str();
 	
-	fn = new_str("test");
+	str_append_cstr(fn, "test");
 	
 	struct token tokens;
 	
 	token_init(&tokens);
 	
-	parse_tokenize(&fn, &tokens);
+	parse_tokenize(fn, &tokens);
 	
 	print_tokens(&tokens);
 	
 	
 	struct var *testvar;
-	
 	testvar = parse_literal_expr(&tokens);
 	
 	printf("\n");

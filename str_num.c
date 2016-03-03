@@ -137,6 +137,12 @@ void str_del(struct str *in)
 	
 }
 
+void free_str(struct str *in)
+{
+	str_del(in);
+	free(in);
+}
+
 void str_init(struct str *in)
 {
 	in->length = 0;
