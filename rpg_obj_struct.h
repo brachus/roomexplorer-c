@@ -15,6 +15,9 @@
 
 #define NO_OPP -1
 
+#define F_UNKNOWN -2
+#define F_LABEL	-1
+
 
 #define P_GET_OBJ_NAME					14
 #define P_GET_OBJ_OPEN_BRACE			15
@@ -35,6 +38,10 @@
 #define P_SCRIPT_GET_SEMICOLON			30
 #define P_ERR							31
 
+
+#define S_INIT	1
+#define S_BODY	2
+#define S_TERM	4
 
 
 struct var
@@ -96,13 +103,18 @@ struct func
 {
 	int id;
 	
+	/* for labels (id=-1), OR jmp functions: */
 	int label;
-	struct str *label_name;
+	struct str *label_name; /* if id=F_UNKNOWN, this becomes function name string. */
 	
 	/* idx to object (as opperand).  may be NO_OPP if no opperand obj */
 	int obj_idx;
 	/* may be needed for object creation. */
 	struct str *obj_name; 
+	
+	struct idnt *ret; /* NULL if no return. */
+	
+	struct idnt *args; /* NULL if no arguments are given to function call */
 	
 	struct func *next; /* NULL if last. */
 	struct func *last;
@@ -135,7 +147,7 @@ struct var *new_var(void);
 void free_var(struct var *in);
 int var_search_str(struct var *vars, struct str *find);
 void var_add_str(struct var *vars, struct str *add);
-void add_var(struct var *vars);
+void add_new_var(struct var *vars);
 void print_var_val(struct var *in);
 void print_var(struct var *in);
 void idnt_init(struct idnt *in);
@@ -146,4 +158,6 @@ void obj_init(struct obj *in);
 struct obj *new_obj(void);
 void obj_dat_init(struct obj_dat *in);
 void add_obj(struct obj_dat *in);
-void obj_add_var(struct obj *in);
+void obj_add_new_var(struct obj *in);
+void obj_add_var(struct obj *in,  struct var *addvar);
+void obj_add_func(struct obj *in, struct func *addme, int stype);

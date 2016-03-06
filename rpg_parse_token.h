@@ -49,7 +49,11 @@ struct token
 void token_init(struct token* tokens);
 void print_tokens(struct token* tokens);
 void add_token(struct token* tokens, int type, int line, int col, char* fname);
+void add_cpy_token(struct token *tokens, struct token_l *tok);
 struct token_l *new_token();
 struct token_l *cpy_token(struct token_l *in);
+void free_token_l(struct token_l *in);
+void free_tokens(struct token *in);
 int token_nnames(struct token_l *in);
+int token_if_sym(struct token_l *tok, char *sym);
 void parse_tokenize(struct str *fn, struct token* tokens);

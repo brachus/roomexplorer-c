@@ -91,13 +91,23 @@ int var_search_str(struct var *vars, struct str *find)
 
 void var_add_str(struct var *vars, struct str *add)
 {
-	add_var(vars);
+	add_new_var(vars);
 	
 	vars->last->dat_str = str_cpy(add);
 }
 
+/* add existing var to a chain of vars.
+ * this function doesnt copy the var;
+ * it assumes var comes from parse_literal_expr or cpy_var. */
+void add_var(struct var *vars, struct var *addme)
+{
+
+	vars->last->next = addme;
+	vars->last = vars->last->next;
+}
+
 /* add var to a chain of vars */
-void add_var(struct var *vars)
+void add_new_var(struct var *vars)
 {
 
 	vars->last->next = new_var();
@@ -108,6 +118,7 @@ void add_var(struct var *vars)
 
 void print_var_val(struct var *in)
 {
+	
 	switch(in->type)
 	{
 	case V_INT:
@@ -148,8 +159,16 @@ void print_var_val(struct var *in)
 	}
 }
 
-void print_var(struct var *in)
+void print_var(struct var *in, char *pad)
 {	
+	if (!in)
+	{
+		printf("<nothing>\n");
+		return;
+	}
+	
+	printf("%s", pad);
+		
 	if (!in->name || in->name->length == 0)
 		printf("<noname>");
 	else
@@ -160,7 +179,12 @@ void print_var(struct var *in)
 	print_var_val(in);
 	
 	printf("\n");
+	
+	if (in->next != NULL)
+		print_var(in->next, pad);
 }
+
+
 
 
 
@@ -188,15 +212,41 @@ struct idnt *new_idnt(void)
 	return n;
 }
 
+struct idnt *create_idnt_two_names(struct str *n0, struct str *n1)
+{
+	struct idnt *n = new_idnt();
+	
+	n->type = IDNT_OBJVAR;
+	
+	n->obj_name = str_cpy(n0);
+	n->var_name = str_cpy(n1);
+	
+	return n;
+};
+
+struct idnt *create_idnt_reg(int regn)
+{
+	struct idnt *n = new_idnt();
+	
+	n->type = IDNT_REG;
+	
+	n->idx = regn;
+	
+	
+	return n;
+};
+
 void func_init(struct func *in)
 {
 	in->id = -1;
 	in->label = -1;
-	in->label_name = NULL;
+	in->label_name = 0;
 	in->obj_idx = -1;
-	in->obj_name = NULL;
-	in->next = NULL;
-	in->last = in;
+	in->obj_name = 0;
+	in->ret = 0;
+	in->args = 0;
+	in->next = 0;
+	in->last = 0;
 	
 }
 
@@ -210,6 +260,36 @@ struct func *new_func(void)
 	
 	return n;
 }
+
+struct func *create_func_label(struct str *labelstr)
+{
+	struct func *n;
+	
+	n = new_func();
+	n->label_name = labelstr;
+	n->id = F_LABEL;
+	
+	return n;
+	
+};
+
+struct func *create_func_jmp(int id, struct str *labelstr, int regn)
+{
+	struct func *n;
+	
+	n = new_func();
+	n->id = id;
+	n->label_name = labelstr;
+	
+	if (id == F_IF_JMP)
+	{
+		n->args = new_idnt();
+		n->args->type = IDNT_REG;
+		n->idx = regn;
+	}
+	
+	return n;
+};
 
 void obj_init(struct obj *in)
 {
@@ -239,13 +319,13 @@ struct obj *new_obj(void)
 
 void obj_dat_init(struct obj_dat *in)
 {
-	in->first = NULL;
-	in->last = NULL;
+	in->first = 0;
+	in->last = 0;
 }
 
 void add_obj(struct obj_dat *in)
 {
-	if (in->first == NULL)
+	if (!in->first)
 	{
 		in->first = new_obj();
 		in->last = in->first;
@@ -257,15 +337,70 @@ void add_obj(struct obj_dat *in)
 	}
 }
 
-void obj_add_var(struct obj *in)
+
+
+void obj_add_var(struct obj *in, struct var *addvar)
 {
-	if (in->vars == NULL)
+	if (!in->vars)
 	{
-		in->vars = new_var();
+		in->vars = addvar;
+		in->vars->last = in->vars;
 	}
 	else
 	{
-		in->vars->last->next = new_var();
+		in->vars->last->next = addvar;
 		in->vars->last = in->vars->last->next;
 	}
 }
+
+void obj_add_new_var(struct obj *in)
+{
+	obj_add_var(in, new_var());
+}
+
+void obj_add_func(struct obj *in, struct func *addme, int stype)
+{
+	if (stype == S_INIT)
+	{
+		if (!in->init)
+		{
+			in->init = addme;
+			in->init->last = in->init;
+		}
+		else
+		{
+			in->init->last->next = addme;
+			in->init->last = in->init->last->next;
+		}
+
+	}
+	else if (stype == S_BODY)
+	{
+		if (!in->body)
+		{
+			in->body = addme;
+			in->body->last = in->body;
+		}
+		else
+		{
+			in->body->last->next = addme;
+			in->body->last = in->body->last->next;
+		}
+
+	}
+	else if (stype == S_TERM)
+	{
+		if (!in->term)
+		{
+			in->term = addme;
+			in->term->last = in->term;
+		}
+		else
+		{
+			in->term->last->next = addme;
+			in->term->last = in->term->last->next;
+		}
+
+	}
+}
+

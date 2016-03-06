@@ -9,15 +9,224 @@
 #include "rpg_parse_main.h"
 
 
+#define NFUNCNAMES = 4
+
+char *funcnames[] = 
+{
+	"jmp",
+	"if_jmp",
+	"println",
+	"exit"
+}
+
+
+int match_sname(struct str *in)
+{
+	if 	(	str_cmp_cstr(in, "init")	)
+		return S_INIT;
+	else if  (	str_cmp_cstr(in, "body")	)
+		return S_BODY;
+	else if  (	str_cmp_cstr(in, "term")	)
+		return S_TERM;
+	else
+		return 0;
+}
+
+struct ifdat *new_ifdat()
+{
+	struct ifdat *new = malloc(sizeof (struct ifdat));
+	
+	new->first = 0;
+	new->last = 0;
+	new->if_cntr = 0;
+	new->if_level = -1;
+	
+	return new;
+};
+
+struct ifdat_l *new_ifdat_l();
+{
+	struct ifdat_l *new = malloc(sizeof(struct ifdat_l));
+	
+	new->id	  = 0;
+	new->mode = 0;
+	new->branch_cntr = 0;
+	new->next = 0;
+	new->prev = 0;
+	
+	return new;
+};
+
+int if_get_last_mode(struct ifdat *in)
+{
+	if (!in->last)
+		return IF_NULL;
+	else
+		return in->last->mode;
+}
+
+void if_set_last_mode(struct ifdat *in, int md)
+{
+	if (in->last != 0)
+		in->last->mode = md;
+}
+
+int if_get_last_id(struct ifdat *in)
+{
+	if (!in->last)
+		return -1;
+	else
+		return in->last->id;
+}
+
+int if_get_last_bcntr(struct ifdat *in)
+{
+	if (!in->last)
+		return -1;
+	else
+		return in->last->branch_cntr;
+}
+
+void if_set_last_id(struct ifdat *in, int id)
+{
+	if (in->last != 0)
+		in->last->id = id;
+}
+
+void if_set_last_bcntr(struct ifdat *in, int bcntr)
+{
+	if (in->last != 0)
+		in->last->branch_cntr = bcntr;
+}
+
+void if_step_last_bcntr(struct ifdat *in)
+{
+	if (in->last != 0)
+		in->last->branch_cntr++;
+}
+
+struct create_jmp_label(int ifid, int branch_cntr,int doend)
+{
+	char *s = malloc(64);
+	struct str *new = new_str();
+	
+	if (ifid >= 0 && branch_cntr >= 0)
+		sprintf(s, "if%d_%d", ifid, branch_cntr);
+	else if (ifid >= 0)
+		sprintf(s, "if%d", ifid);
+	else
+		sprintf(s, "if");
+	
+	str_append_cstr(new, s);
+	
+	if (doend)
+		str_append_cstr(new, "_end");
+	
+	free(s);
+	
+	return new;
+};
+
+void ifdat_pop(struct ifdat *dat)
+{
+	struct ifdat_l *tmp;
+	if (dat->last != 0)
+	{
+		if (dat->last->prev != 0)
+		{
+			tmp = dat->last;
+			
+			dat->last = tmp->prev;
+			
+			dat->last->next = 0;
+			
+			free(tmp);
+		}
+		else
+		{
+			free(dat->last);
+			dat->first = 0;
+			dat->last = 0;
+		}
+		
+		dat->if_level--;
+	}
+}
+
+void add_if(struct ifdat *dat, int md)
+{
+	dat->if_cntr++;
+	
+	
+	if (!dat->first)
+	{
+		dat->first = new_ifdat_l();
+		dat->last = dat->first
+	}
+	else
+	{
+		dat->last->next = new_ifdat_l();
+		dat->last->next->prev = dat->last;
+		dat->last = dat->next;
+	}
+	
+	dat->last->id = dat->if_cntr;
+	dat->last->branch_cntr = 0;
+	dat->last->mode = md;
+	
+	dat->if_level++;
+	
+};
+
+void obj_add_label(struct obj_dat *dat, struct str *labelstr, int stype)
+{
+	obj_add_func(dat->last, create_func_label(labelstr), stype);
+}
+
+void obj_add_ifjmp(struct obj_dat *dat, int regn, struct str *labelstr, int stype)
+{
+	obj_add_func(dat->last, create_func_jmp(F_IF_JMP, labelstr, regn), stype);
+}
+
+void obj_add_jmp(struct obj_dat *dat, struct str *labelstr, int stype)
+{
+	obj_add_func(dat->last, create_func_jmp(F_JMP, labelstr, -1), stype);
+}
+
+/* match an input str with an entry in global funcnames */
+int get_funcname_id(struct str *in)
+{
+	int i = 0;
+	for (i=0;i<NFUNCNAMES;i++)
+		if (str_cmp_cstr(in, funcnames[i]))
+			return i;
+	return F_UNKNOWN;
+}
+
+struct func *obj_get_last_func(struct obj *in, int stype)
+{
+	if (stype == S_INIT && in->init != 0)
+		return in->init->last;
+	else if (stype == S_BODY && in->body != 0)
+		return in->body->last;
+	else if (stype == S_TERM && in->term != 0)
+		return in->term->last;
+	
+	return 0;
+}
+
+
+
+
+
+
 
 struct obj_dat *parse_main(struct token *tokens)
 {
 	
-	int md, ifcntr, ifstate,
-		iflevel, hold, set_hold,
-		script_type, didinit, didbody, didterm;
-	
-	
+	int md, hold, regn
+		stype, didsnames,
+		dostmnt;
 	
 	md = P_OPEN;
 	
@@ -31,7 +240,7 @@ struct obj_dat *parse_main(struct token *tokens)
 	struct func *cur_func;
 	
 	struct token_l *tmp_tok;
-	tmp_tok = tokens->tok_first;
+	tmp_tok = tokens->first;
 	
 	add_token(tokens, T_EOF, 0, 0, "");
 	
@@ -39,7 +248,13 @@ struct obj_dat *parse_main(struct token *tokens)
 	struct var *used_predef_names = new_var();
 	struct var *used_script_names = new_var();
 	
-	set_hold = 0;
+	struct token_l *tmp_name;
+	
+	struct ifdat *ifstate = new_ifdat();
+	
+	struct func *tmpfunc;
+	
+	hold = 0;
 	
 	while (tmp != NULL)
 	{
@@ -47,72 +262,54 @@ struct obj_dat *parse_main(struct token *tokens)
 		switch (md)
 		{
 		case P_OPEN:
-			if (tmp_tok->type == T_NAME)
+			if (tmp_tok->type == T_NAME && token_nnames(tmp_tok) == 1)
 			{
-				if (token_nnames(tmp_tok) == 1)
-				{
-					add_obj(&dat);
-					dat.last->type = str_cpy(&tmp_tok->dat_str[0]);
-					md = P_GET_OBJ_NAME;
-					
-					free_var(used_predef_names);
-					free_var(used_script_names);
-					struct var *used_predef_names = new_var();
-					struct var *used_script_names = new_var();
-					
-					didinit = 0;
-					didbody = 0;
-					didterm = 0;
-				}
-				else
-					vm_err(	tmp_tok->fn,
-							tmp_tok->line,
-							tmp_tok->col,
-						"only single names identifiers may be used for object type.");
+				
+				add_obj(&dat);
+				dat.last->type = str_cpy(tmp_tok->dat_str[0]);
+				md = P_GET_OBJ_NAME;
+				
+				free_var(used_predef_names);
+				free_var(used_script_names);
+				used_predef_names = new_var();
+				used_script_names = new_var();
+				
+				didsnames = 0;
 			}
+			else if (tmp_tok->type == T_NAME && token_nnames(tmp_tok) > 1)
+				vm_err(	tmp_tok->fn, tmp_tok->line, tmp_tok->col,
+					"only single names identifiers may be used for object type.");
 			else if (tmp_tok->type == T_EOF)
 				break;
 			else
-				vm_err(	tmp_tok->fn,
-						tmp_tok->line,
-						tmp_tok->col,
+				vm_err(	tmp_tok->fn, tmp_tok->line, tmp_tok->col,
 						"expected name for object type.");
 			break;
 		case P_GET_OBJ_NAME:
-			if (tmp_tok->type == T_NAME)
+			if (tmp_tok->type == T_NAME && token_nnames(tmp_tok) == 1)
 			{
-				if (token_nnames(tmp_tok) == 1)
+				/* check for duplicate obj name. */
+				if (var_search_str(used_obj_names, tmp_tok->dat_str[0]) == 0)
 				{
-					/* look for duplicate obj name. */
-					if (var_search_str(used_obj_names, &tmp_tok->dat_str[0]) == 0)
-					{
-						var_add_str(used_obj_names, &tmp_tok->dat_str[0]);
-						
-						dat.last->name = str_cpy(&tmp_tok->dat_str[0]);
-						
-						md = P_GET_OBJ_OPEN_BRACE;
-					}
-					else
-						vm_err(	tmp_tok->fn,
-								tmp_tok->line,
-								tmp_tok->col,
-								"duplicate obj name.");
+					var_add_str(used_obj_names, tmp_tok->dat_str[0]);
+					
+					dat.last->name = str_cpy(tmp_tok->dat_str[0]);
+					
+					md = P_GET_OBJ_OPEN_BRACE;
 				}
 				else
-					vm_err(	tmp_tok->fn,
-							tmp_tok->line,
-							tmp_tok->col,
-						"only single names identifiers may be used for object name.");
+					vm_err(	tmp_tok->fn, tmp_tok->line, tmp_tok->col,
+						"duplicate obj name.");
 			}
+			else if (tmp_tok->type == T_NAME && token_nnames(tmp_tok) > 1)
+				vm_err(	tmp_tok->fn, tmp_tok->line, tmp_tok->col,
+					"only single names identifiers may be used for object name.");
 			else
-				vm_err(	tmp_tok->fn,
-						tmp_tok->line,
-						tmp_tok->col,
-						"expected name for object name.");
+				vm_err(	tmp_tok->fn, tmp_tok->line, tmp_tok->col,
+					"expected name for object name.");
 			break;
 		case P_GET_OBJ_OPEN_BRACE:
-			if (		tmp_tok->type == T_SYM &&
-						str_cmp_cstr(&tmp_tok->dat_str[0], "{")		)
+			if ( token_if_sym(tmp_tok, "{")	)
 				md = P_OPEN_PREDEF;
 			else
 				vm_err(	tmp_tok->fn,
@@ -121,94 +318,412 @@ struct obj_dat *parse_main(struct token *tokens)
 						"expected opening brace for obj.");
 			break;
 		case P_OPEN_PREDEF:
-			if (tmp_tok->type == T_SYM)
+			if (token_if_sym(tmp_tok, "}"))
+				md = P_OPEN; /* close obj */
+				
+			else if (tmp_tok->type == T_NAME && token_nnames(tmp_tok) == 2)
 			{
-				if (str_cmp_cstr(&tmp_tok->dat_str[0], "}"))
-					md = P_OPEN; /* close obj */
+				
+				/* watch out for duplicate predef names */
+				if (var_search_str(used_predef_names, &tmp_tok->dat_str[1]) == 0)
+				{
+					var_add_str(used_predef_names, &tmp_tok->dat_str[1]);
+					
+					md = P_GET_PREDEF_EQUALS;
+					
+					/* used_predef_names->last for current predef name. */
+				}
 				else
 					vm_err(	tmp_tok->fn,
+							tmp_tok->line,
+							tmp_tok->col,
+							"duplicate predef name.");
+			}
+			else if (tmp_tok->type == T_NAME && token_nnames(tmp_tok) == 1)
+			{
+				stype = match_sname(tmp_tok->dat_str[0]);
+				
+				if (stype == 0)
+					vm_err(	tmp_tok->fn,tmp_tok->line,tmp_tok->col,
+						"only \"init\", \"body\", or \"term\" scripts are supported.");
+				
+				if (didsnames & stype)
+					vm_err(	tmp_tok->fn,tmp_tok->line,tmp_tok->col,
+							"duplicate object script.");
+				
+				didsnames |= stype;
+					
+				
+				md = P_GET_SCRIPT_OPEN_BRACE;
+			}
+			else if  (tmp_tok->type == T_NAME && token_nnames(tmp_tok) > 2)
+				vm_err(	tmp_tok->fn,tmp_tok->line,tmp_tok->col,
+						"too many names.");
+			else
+				vm_err(	tmp_tok->fn,
 						tmp_tok->line,
 						tmp_tok->col,
 						"expected closing brace, name for script, OR predef.");
-			}
-			else if (tmp_tok->type == T_NAME)
+			break;
+		case P_GET_PREDEF_EQUALS:
+			if (	token_if_sym(tmp_tok, "=")	)
 			{
-				/* look for var name of format '.xxx' */
-				if (token_nnames(tmp_tok) == 2)
-				{
-					/* watch out for duplicate predef names */
-					if (var_search_str(used_predef_names, &tmp_tok->dat_str[1]) == 0)
-					{
-						var_add_str(used_predef_names, &tmp_tok->dat_str[1]);
-						
-						md = P_GET_PREDEF_EQUALS;
-						
-						/* used_predef_names->last for current predef name. */
-					}
-					else
-						vm_err(	tmp_tok->fn,
-								tmp_tok->line,
-								tmp_tok->col,
-								"duplicate predef name.");
-				}
-				else if (token_nnames(tmp_tok) == 1)
-				{
-					/* if script name */
-					if (	str_cmp_cstr(&tmp_tok->dat_str[0], "init")	)
-					{
-						
-						script_type = S_INIT;
-						if (didinit)
-							vm_err(	tmp_tok->fn,tmp_tok->line,tmp_tok->col,
-								"duplicate object script.");
-						didinit = 1;
-					}
-					else if (	str_cmp_cstr(&tmp_tok->dat_str[0], "body")	)
-					{
-						script_type = S_BODY;
-						if (didbody)
-							vm_err(	tmp_tok->fn,tmp_tok->line,tmp_tok->col,
-								"duplicate object script.");
-						didbody = 1;
-					}
-					else if (	str_cmp_cstr(&tmp_tok->dat_str[0], "term")	)
-					{
-						script_type = S_TERM;
-						if (didterm)
-							vm_err(	tmp_tok->fn,tmp_tok->line,tmp_tok->col,
-								"duplicate object script.");
-						didterm = 1;
-					}
-					else
-						vm_err(	tmp_tok->fn,tmp_tok->line,tmp_tok->col,
-							"only \"init\", \"body\", or \"term\" scripts are supported.");
-					
-					md = P_GET_SCRIPT_OPEN_BRACE;
-				}
-				else
-					vm_err(	tmp_tok->fn,tmp_tok->line,tmp_tok->col,
-								"too many names.");
+				free_tokens(&lexpr);
+				
+				md = P_GET_PREDEF_LITERAL;
 			}
 			else
 				vm_err(	tmp_tok->fn,tmp_tok->line,tmp_tok->col,
-					"expected name or obj close.");
+								"expected \"=\".");
+			
 			break;
-		case P_GET_PREDEF_EQUALS:
-			if (tmp_tok->type == T_SYM)
+			
+		case P_GET_PREDEF_LITERAL:
+			if (	token_if_sym(tmp_tok, ";")	)
 			{
-				if (str_cmp_cstr(&tmp_tok->dat_str[0], "="))
+				obj_add_var(dat.last, parse_literal_expr(l_expr));
+				md = P_OPEN_PREDEF;
+			}
+			else if ( tmp_tok->type == T_EOF)
+				vm_err(	tmp_tok->fn,tmp_tok->line,tmp_tok->col,
+					"expected continued expression or \";\".");
+			else
+				add_cpy_token(&l_expr, tmp_tok);
+			
+			break;
+			
+		case P_GET_SCRIPT_OPEN_BRACE:
+			if (	token_if_sym(tmp_tok, "{") )
+				md =  P_SCRIPT_OPEN;
+			else
+				vm_err(	tmp_tok->fn,tmp_tok->line,tmp_tok->col,
+							"expected opening brace.");
+			break;
+			
+		case P_SCRIPT_OPEN:
+			dostmnt = 0;
+			
+			if (tmp_tok->type == T_NAME && token_nnames(tmp_tok) == 2)
+			{
+				free_token_l(tmp_name);
+				tmp_name = cpy_token(tmp_tok);
+				
+				if (tmp_name->dat_str[0]->length == 0)
 				{
+					free_str(tmp_name->dat_str[0]);
+					tmp_name->dat_str[0] = str_cpy(dat.last->name);
+				}
+				
+				md = P_SCRIPT_GET_PARA_EQUALS;
+				dostmnt = 1;
+			}
+			else if (tmp_tok->type == T_NAME && token_nnames(tmp_tok) == 1)
+			{
+				free_token_l(tmp_name);
+				tmp_name = cpy_token(tmp_tok);
+				
+				dostmnt = 1;
+				
+				if (parse_ret_reg(tmp_tok->dat_str[0]) != -1)
+					md = P_SCRIPT_GET_EQUALS;
+				else if (str_cmp_cstr(tmp_name -> dat_str[0],"if"))
+				{
+					md = P_SCRIPT_GET_PARA_COLON;
 					
+					if (ifstate->if_level == -1 ||
+							if_get_last_mode(ifstate) == IF_IN_BRANCH ||
+							if_get_last_mode(ifstate) == IF_IN_ELSEBRANCH)
+					{
+						add_if(ifstate, IF_GET_REG);
+						
+						md = P_SCRIPT_GET_IF_REG;
+						dostmnt = 0;
+					}
+					else if (if_get_last_mode(ifstate) == IF_OPEN)
+					{
+						obj_add_label(&dat,
+							create_jmp_label(
+								if_get_last_id(ifstate),
+								-1,
+								1 ),
+							stype);
+							
+						ifstate->if_cntr++;
+						
+						if_set_last_mode(ifstate, IF_GET_REG);
+						if_set_last_bcntr(ifstate, 0);
+						if_set_last_id(ifstate, ifstate->if_cntr);
+						
+						md = P_SCRIPT_GET_IF_REG;
+						dostmnt = 0;
+					}
+				}
+				else if (str_cmp_cstr(tmp_name -> dat_str[0],"else"))
+				{
+					if (ifstate->if_level == -1 ||
+						if_get_last_mode(ifstate) == IF_IN_BRANCH ||
+						if_get_last_mode(ifstate) == IF_IN_ELSEBRANCH)
+						vm_err(	tmp_tok->fn,tmp_tok->line,tmp_tok->col,
+							"unexpected else branch.");
+					else if (if_get_last_mode(ifstate) == IF_OPEN)
+					{
+						if_set_last_mode(ifstate, IF_GET_ELSE_IF);
+						if_step_last_bcntr(ifstate);
+						md = P_SCRIPT_GET_ELSE_IF;
+					}
+				}
+				else
+					vm_err(	tmp_tok->fn,tmp_tok->line,tmp_tok->col,
+						"expected function name, \"if\" or \"else\".");
+			}
+			else if ( token_if_sym(tmp_tok, "}") )
+			{
+				if (ifstate->level == -1)
+					md = P_OPEN_PREDEF;
 					
-					md = P_GET_PREDEF_LITERAL;
+				else if (if_get_last_mode(ifstate) == IF_IN_BRANCH ||
+							if_get_last_mode(ifstate) == IF_IN_ELSE_BRANCH )
+				{
+					/* jump out of branch to end of conditional block. */
+					obj_add_jmp(&dat,
+						create_jmp_label(
+							if_get_last_id(ifstate),
+							-1,
+							1 ),
+						stype);
+					
+					/* mark end of branch */
+					obj_add_label(&dat,
+						create_jmp_label(
+							if_get_last_id(ifstate),
+							if_get_last_bcntr(ifstate),
+							1 ),
+						stype);
+					
+					if_set_last_mode(ifstate, IF_OPEN);
+					
+					/* INVESTIGATE ln 402 in "rpg_parse_main_with_branching.js" */
+					
+					md = P_SCRIPT_OPEN;
+				}
+				else if (if_get_last_mode(ifstate) == IF_OPEN)
+				{
+					/* close conditional block, and a branch underneath if it
+					 * exists.
+					 */
+					obj_add_label(&dat,
+						create_jmp_label(
+							if_get_last_id(ifstate),
+							-1,
+							1 )
+						),
+						stype);
+						
+					ifdat_pop(ifstate);
+					
+					if (ifstate->if_level >= 0)
+					{
+						/* jump out of branch to end of conditional block. */
+						obj_add_jmp(&dat,
+							create_jmp_label(
+								if_get_last_id(ifstate),
+								-1,
+								1 ),
+							stype);
+							
+						/* mark end of branch */
+						obj_add_label(&dat,
+							create_jmp_label(
+								if_get_last_id(ifstate),
+								if_get_last_bcntr(ifstate),
+								1 ),
+							stype);
+						
+						if_set_last_mode(ifstate, IF_OPEN);
+						md = P_SCRIPT_OPEN;
+						
+					}
+					else
+						md = P_OPEN_PREDEF;
 				}
 			}
+			else
+				vm_err(	tmp_tok->fn,tmp_tok->line,tmp_tok->col,
+					"expected script content OR ending brace.");
+			
+			if (ifstate->if_level >= 0 &&
+				if_get_last_mode(ifstate) == IF_OPEN &&
+				dostmnt)
+			{
+				obj_add_label(&dat,
+					create_jmp_label(
+						if_get_last_id(ifstate),
+						-1,
+						1 ),
+					stype);
+					
+				ifdat_pop(ifstate);
+			}
+			
 			break;
+		case P_SCRIPT_GET_IF_REG:
+			if (tmp_tok->type == T_NAME && token_nnames(tmp_tok) == 1)
+			{
+				regn = parse_ret_reg(tmp_tok->dat_str[0]);
+				if (regn >= 0)
+				{
+					/* setup ifjmp func */
+					obj_add_ifjmp(&dat,
+						regn,
+						create_jmp_label(
+							if_get_last_id(ifstate),
+							if_get_last_bcntr(ifstate),
+							0 ),
+						stype);
+						
+					/* setup jmp for else case */
+					obj_add_jmp(&dat,
+						create_jmp_label(
+							if_get_last_id(ifstate),
+							if_get_last_bcntr(ifstate),
+							1 ),
+						stype);
+					
+					/* open branch */
+					obj_add_label(&dat,
+						create_jmp_label(
+							if_get_last_id(ifstate),
+							if_get_last_bcntr(ifstate),
+							0 ),
+						stype);
+					
+					if_set_last_mode(ifstate, IF_IN_BRANCH);
+					
+					md = P_SCRIPT_GET_IF_BRANCH_OPEN;
+					
+				}
+				else
+					vm_err(	tmp_tok->fn,tmp_tok->line,tmp_tok->col,
+						"expected valid register.");
+			}
+			else
+				vm_err(	tmp_tok->fn,tmp_tok->line,tmp_tok->col,
+					"expected register.");
+			break;
+			
+		case P_SCRIPT_GET_ELSE_IF:
+			if (tmp_tok->type == T_NAME &&
+					token_nnames(tmp_tok) == 1 &&
+					str_cmp_cstr(tmp_name -> dat_str[0],"if") )
+				md = P_SCRIPT_GET_IF_REG;
+			else if ( token_if_sym(tmp_tok, "{") )
+			{
+				if_set_last_mode(ifstate, IF_IN_ELSEBRANCH);
+				md=P_SCRIPT_OPEN;
+			}
+			else
+			{
+				hold = 1;
+				if_set_last_mode(ifstate, IF_IN_ELSEBRANCH_ONELINE);
+				md=P_SCRIPT_OPEN;
+			}
+			
+			break;
+		
+		case P_SCRIPT_GET_IF_BRANCH_OPEN:
+			if (token_if_sym(tmp_tok, "{"))
+				md = P_SCRIPT_OPEN;
+			else
+			{
+				hold = 1;
+				if_set_last_mode(ifstate, IF_IN_BRANCH_ONELINE);
+				md = P_SCRIPT_OPEN;
+			}
+			break;
+		
+		case P_SCRIPT_GET_PARA_COLON:
+			/*tmp_name will only have 1 name */
+			
+			if (token_if_sym(tmp_tok, "("))
+			{
+				
+				obj_add_func(dat.last, new_func(), stype);
+				tmpfunc = obj_get_last_func(dat.list, stype);
+				tmpfunc->id = get_funcname_id(tmp_name->dat_str[0]);
+				
+				if (tmpfunc->id == F_UNKNOWN)
+					vm_err(	tmp_tok->fn,tmp_tok->line,tmp_tok->col,
+						"unknown function.");
+				
+				md = P_SCRIPT_GET_ARG;
+			}
+			else if (token_if_sym(tmp_tok, ":"))
+			{
+				obj_add_label(&dat,
+					tmp_name->dat_str[0],
+					stype);
+					
+				md = P_SCRIPT_OPEN;
+			}
+			else
+				vm_err(	tmp_tok->fn,tmp_tok->line,tmp_tok->col,
+					"expected \":\" or \"(\".");
+			
+			break;
+		
+		case P_SCRIPT_GET_PARA_EQUALS:
+			/* assume tmp_name has two names */
+			if (token_if_sym(tmp_tok, "("))
+			{
+				
+				obj_add_func(dat.last, new_func(), stype);
+				tmpfunc = obj_get_last_func(dat.list, stype);
+				tmpfunc->id = get_funcname_id(tmp_name->dat_str[1]);
+				
+				if (tmpfunc->id == F_UNKNOWN)
+					vm_err(	tmp_tok->fn,tmp_tok->line,tmp_tok->col,
+						"unknown function.");
+				
+				tmpfunc->obj_name = str_cpy(tmp_name->dat_str[0]);
+				
+				md = P_SCRIPT_GET_ARG;
+			}
+			else if (token_if_sym(tmp_tok, "="))
+			{
+				obj_add_func(dat.last, new_func(), stype);
+				tmpfunc = obj_get_last_func(dat.list, stype);
+				
+				/* TODO: set return to tmp_name */
+				tmpfunc->ret = create_idnt_two_names(tmp_name->dat_str[0], tmp_name->dat_str[1]);
+				
+				md = P_SCRIPT_GET_FNAME;
+			}
+			else
+				vm_err(	tmp_tok->fn,tmp_tok->line,tmp_tok->col,
+					"expected \"(\" or \"=\".");
+			break;
+		
+		case P_SCRIPT_GET_EQUALS:
+			/* assume tmp_name is register identifier */
+			if (token_if_sym(tmp_tok, "="))
+			{
+				obj_add_func(dat.last, new_func(), stype);
+				tmpfunc = obj_get_last_func(dat.list, stype);
+				
+				/* ? */
+				tmpfunc->ret = create_idnt_reg(tmp_name->dat_str[0]);
+			}
+			
+			break;
+			
 		default:
 			break;
 		}
 		
-		tmp_tok = tmp_tok->next;
+		if (hold == 0)
+			tmp_tok = tmp_tok->next;
+		else
+			hold = 0;
 	}
 	
-};
+}

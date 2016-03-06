@@ -28,7 +28,7 @@ int main(void)
 	
 	printf("\n");
 	
-	print_var(testvar);
+	print_var(testvar,"\t");
 	
 	
 	return 0;

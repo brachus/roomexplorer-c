@@ -5,3 +5,7 @@ gcc -ansi main.c \
 	rpg_parse_token.c\
 	rpg_obj_struct.c\
 	rpg_parse_expr.c
+echo
+echo ///////   RUNNING   ////////
+echo
+./a.out

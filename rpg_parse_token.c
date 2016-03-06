@@ -11,6 +11,8 @@ void token_init(struct token* tokens)
 	tokens->last = NULL;
 }
 
+
+
 void print_tokens(struct token* tokens)
 {
 	struct token_l *tmp;
@@ -76,6 +78,20 @@ void add_token(struct token* tokens, int type, int line, int col, char* fname)
 	
 }
 
+void add_cpy_token(struct token *tokens, struct token_l *tok)
+{
+	if (!tokens->first)
+	{
+		tokens->first = cpy_token(tok);
+		tokens->last = tokens->last;
+	}
+	else
+	{
+		tokens->last->next = cpy_token(tok);
+		tokens->last = tokens->last->next;
+	}
+}
+
 struct token_l *new_token()
 {
 	struct token_l *new = malloc(sizeof(struct token_l));
@@ -116,6 +132,30 @@ struct token_l *cpy_token(struct token_l *in)
 	
 };
 
+void free_token_l(struct token_l *in)
+{
+	if (in->next != NULL)
+		free_token_l(in->next);
+	in->next = NULL;
+	
+	free_str(in->dat_str[0]);
+	free_str(in->dat_str[1]);
+	free_str(in->dat_str[2]);
+	
+	free(in->dat_str);
+	
+	free(in->fn);
+	
+	free(in);
+}
+
+void free_tokens(struct token *in)
+{
+	free_token_l(in->first);
+	in->first = NULL;
+	in->last = NULL;
+}
+
 int token_nnames(struct token_l *in)
 {
 	int a = 0;
@@ -128,6 +168,15 @@ int token_nnames(struct token_l *in)
 	}
 	
 	return a;
+}
+
+int token_if_sym(struct token_l *tok, char *sym)
+{
+	if (	tok->type == T_SYM &&
+			str_cmp_cstr(tok->dat_str[0], "=")	)
+		return 1;
+	else
+		return 0;
 }
 
 void parse_tokenize(struct str *fn, struct token* tokens)
