@@ -46,13 +46,13 @@ struct idnt *parse_lexpr_idnt(struct token *tokens)
 		nidnt->use_var = nvar;
 	}
 	
-	return nidnt;
+	return nidnt; /*FIXME: returns int?*/
 }
 
 /* creates new var from literal expression (tokens) */
 struct var *parse_literal_expr(struct token *tokens)
 {	
-	
+	printf("attempting to parse literal ... \n");
 	int md, ttype, tminus, hold, i;
 	struct token_l *tmp;
 	struct var *nvar;
@@ -62,8 +62,10 @@ struct var *parse_literal_expr(struct token *tokens)
 	for (i=0;i<7;i++)
 		map[i] = NULL;
 	int map_lvl = 0;
-	
+
 	add_token(tokens, T_EOF, 0, 0, "");
+	
+	
 	
 	md = P_OPEN;
 	ttype = -1;
@@ -74,6 +76,7 @@ struct var *parse_literal_expr(struct token *tokens)
 	
 	while (tmp != NULL)
 	{
+		printf("parse_lit: md: %d\n",md);
 		switch(md)
 		{
 		case P_OPEN:

@@ -45,10 +45,7 @@
 #define IF_IN_ELSEBRANCH_ONELINE 6
 
 
-/* function id's */
 
-#define F_JMP		0
-#define F_IF_JMP	1
 
 
 struct ifdat_l
@@ -78,7 +75,7 @@ int if_get_last_bcntr(struct ifdat *in);
 void if_set_last_id(struct ifdat *in, int id);
 void if_set_last_bcntr(struct ifdat *in, int bcntr);
 void if_step_last_bcntr(struct ifdat *in);
-struct create_jmp_label(int ifid, int branch_cntr,int doend);
+struct str *create_jmp_label(int ifid, int branch_cntr,int doend);
 void ifdat_pop(struct ifdat *dat);
 void add_if(struct ifdat *dat, int md);
 void obj_add_label(struct obj_dat *dat, struct str *labelstr, int stype);

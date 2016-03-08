@@ -150,7 +150,7 @@ void var_add_str(struct var *vars, struct str *add);
 void add_var(struct var *vars, struct var *addme);
 void add_new_var(struct var *vars);
 void print_var_val(struct var *in);
-void print_var(struct var *in);
+void print_var(struct var *in, char *pad);
 void idnt_init(struct idnt *in);
 struct idnt *new_idnt(void);
 struct idnt *create_idnt_two_names(struct str *n0, struct str *n1);

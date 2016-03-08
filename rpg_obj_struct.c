@@ -5,6 +5,7 @@
 #include "rpg_parse_base.h"
 #include "rpg_parse_token.h"
 #include "rpg_obj_struct.h"
+#include "rpg_func_def.h"
 
 /* TODO:
  * 	 functions for freeing var, obj, func, and
@@ -16,19 +17,19 @@ void var_init(struct var *in)
 {
 	in->type = V_NULL;
 	
-	in->name = NULL;
+	in->name = 0;
 	
-	in->dat_str = NULL;
-	in->dat_str_1 = NULL;
-	in->dat_str_2 = NULL;
+	in->dat_str = 0;
+	in->dat_str_1 = 0;
+	in->dat_str_2 = 0;
 	
 	in->dat_int = 0;
 	in->dat_float = 0;
 	
-	in->dat_list = NULL;
-	in->list_next = NULL;
-	in->next  = NULL;
-	in->last = NULL;
+	in->dat_list = 0;
+	in->list_next = 0;
+	in->next  = 0;
+	in->last = in;
 	
 }
 
@@ -195,7 +196,7 @@ void idnt_init(struct idnt *in)
 	in->last = 0;
 }
 
-struct idnt *new_idnt(void)
+struct idnt *new_idnt()
 {
 	struct idnt *n;
 	
@@ -279,7 +280,7 @@ struct func *create_func_jmp(int id, struct str *labelstr, int regn)
 	{
 		n->args = new_idnt();
 		n->args->type = IDNT_REG;
-		n->idx = regn;
+		n->label = regn;
 	}
 	
 	return n;
@@ -333,6 +334,7 @@ void add_obj(struct obj_dat *in)
 
 void obj_add_var(struct obj *in, struct var *addvar)
 {
+	printf("attempting to add var ... \n");
 	if (!in->vars)
 	{
 		in->vars = addvar;

@@ -7,9 +7,10 @@
 #include "rpg_obj_struct.h"
 #include "rpg_parse_expr.h"
 #include "rpg_parse_main.h"
+#include "rpg_func_def.h"
 
 
-#define NFUNCNAMES = 4
+#define NFUNCNAMES 4
 
 char *funcnames[] = 
 {
@@ -17,7 +18,7 @@ char *funcnames[] =
 	"if_jmp",
 	"println",
 	"exit"
-}
+};
 
 int match_sname(struct str *in)
 {
@@ -43,7 +44,7 @@ struct ifdat *new_ifdat()
 	return new;
 };
 
-struct ifdat_l *new_ifdat_l();
+struct ifdat_l *new_ifdat_l()
 {
 	struct ifdat_l *new = malloc(sizeof(struct ifdat_l));
 	
@@ -104,10 +105,10 @@ void if_step_last_bcntr(struct ifdat *in)
 		in->last->branch_cntr++;
 }
 
-struct create_jmp_label(int ifid, int branch_cntr,int doend)
+struct str *create_jmp_label(int ifid, int branch_cntr,int doend)
 {
 	char *s = malloc(64);
-	struct str *new = new_str();
+	struct str *new = create_str();
 	
 	if (ifid >= 0 && branch_cntr >= 0)
 		sprintf(s, "if%d_%d", ifid, branch_cntr);
@@ -160,13 +161,13 @@ void add_if(struct ifdat *dat, int md)
 	if (!dat->first)
 	{
 		dat->first = new_ifdat_l();
-		dat->last = dat->first
+		dat->last = dat->first;
 	}
 	else
 	{
 		dat->last->next = new_ifdat_l();
 		dat->last->next->prev = dat->last;
-		dat->last = dat->next;
+		dat->last = dat->last->next;
 	}
 	
 	dat->last->id = dat->if_cntr;
@@ -294,10 +295,10 @@ void func_fill_idxs(struct obj_dat *odat, struct func *in)
 		in->obj_idx = get_obj_idx(odat, in->obj_name);
 	
 	if (in->ret != 0)
-		idnt_fill_idx(odat, in->ret);
+		idnt_fill_idxs(odat, in->ret);
 	
 	if (in->args != 0)
-		idnt_fill_idx(odat, in->args);
+		idnt_fill_idxs(odat, in->args);
 	
 	/* move on to next */
 	if (in->next != 0)
@@ -371,13 +372,14 @@ int get_obj_idx(struct obj_dat *in, struct str *obj_str)
 struct obj_dat parse_main(struct token *tokens)
 {
 	
-	int md, hold, regn
+	int md, hold, regn,
 		stype, didsnames,
 		dostmnt, blvl;
 	
 	md = P_OPEN;
 	
 	struct token l_expr;
+	token_init(&l_expr);
 	
 	struct obj_dat dat;
 	obj_dat_init(&dat);
@@ -386,8 +388,7 @@ struct obj_dat parse_main(struct token *tokens)
 	struct var *cur_var;
 	struct func *cur_func;
 	
-	struct token_l *tmp_tok;
-	tmp_tok = tokens->first;
+	
 	
 	add_token(tokens, T_EOF, 0, 0, "");
 	
@@ -395,6 +396,7 @@ struct obj_dat parse_main(struct token *tokens)
 	struct var *used_predef_names = new_var();
 	struct var *used_script_names = new_var();
 	
+	struct token_l *tmp_tok;
 	struct token_l *tmp_name;
 	
 	struct ifdat *ifstate = new_ifdat();
@@ -403,24 +405,25 @@ struct obj_dat parse_main(struct token *tokens)
 	
 	hold = 0;
 	
-	while (tmp != NULL)
+	tmp_tok = tokens->first;
+	
+	while (tmp_tok != NULL)
 	{
+		
+		printf(" md: %d\n",md);
 		
 		switch (md)
 		{
 		case P_OPEN:
 			if (tmp_tok->type == T_NAME && token_nnames(tmp_tok) == 1)
 			{
-				
 				add_obj(&dat);
 				dat.last->type = str_cpy(tmp_tok->dat_str[0]);
 				md = P_GET_OBJ_NAME;
-				
 				free_var(used_predef_names);
 				free_var(used_script_names);
 				used_predef_names = new_var();
 				used_script_names = new_var();
-				
 				didsnames = 0;
 			}
 			else if (tmp_tok->type == T_NAME && token_nnames(tmp_tok) > 1)
@@ -439,14 +442,13 @@ struct obj_dat parse_main(struct token *tokens)
 				if (var_search_str(used_obj_names, tmp_tok->dat_str[0]) == 0)
 				{
 					var_add_str(used_obj_names, tmp_tok->dat_str[0]);
-					
 					dat.last->name = str_cpy(tmp_tok->dat_str[0]);
-					
 					md = P_GET_OBJ_OPEN_BRACE;
 				}
 				else
 					vm_err(	tmp_tok->fn, tmp_tok->line, tmp_tok->col,
 						"duplicate obj name.");
+				
 			}
 			else if (tmp_tok->type == T_NAME && token_nnames(tmp_tok) > 1)
 				vm_err(	tmp_tok->fn, tmp_tok->line, tmp_tok->col,
@@ -472,9 +474,9 @@ struct obj_dat parse_main(struct token *tokens)
 			{
 				
 				/* watch out for duplicate predef names */
-				if (var_search_str(used_predef_names, &tmp_tok->dat_str[1]) == 0)
+				if (var_search_str(used_predef_names, tmp_tok->dat_str[1]) == 0)
 				{
-					var_add_str(used_predef_names, &tmp_tok->dat_str[1]);
+					var_add_str(used_predef_names, tmp_tok->dat_str[1]);
 					
 					md = P_GET_PREDEF_EQUALS;
 					
@@ -515,7 +517,7 @@ struct obj_dat parse_main(struct token *tokens)
 		case P_GET_PREDEF_EQUALS:
 			if (	token_if_sym(tmp_tok, "=")	)
 			{
-				free_tokens(&lexpr);
+				free_tokens(&l_expr);
 				
 				md = P_GET_PREDEF_LITERAL;
 			}
@@ -528,7 +530,8 @@ struct obj_dat parse_main(struct token *tokens)
 		case P_GET_PREDEF_LITERAL:
 			if (	token_if_sym(tmp_tok, ";")	)
 			{
-				obj_add_var(dat.last, parse_literal_expr(l_expr));
+				
+				obj_add_var(dat.last, parse_literal_expr(&l_expr));
 				md = P_OPEN_PREDEF;
 			}
 			else if ( tmp_tok->type == T_EOF)
@@ -625,7 +628,7 @@ struct obj_dat parse_main(struct token *tokens)
 			}
 			else if ( token_if_sym(tmp_tok, "}") )
 			{
-				if (ifstate->level == -1)
+				if (ifstate->if_level == -1)
 				{
 					obj_jmp_add_label_idx(dat.last, stype);
 					
@@ -634,7 +637,7 @@ struct obj_dat parse_main(struct token *tokens)
 				}
 					
 				else if (	if_get_last_mode(ifstate) == IF_IN_BRANCH ||
-							if_get_last_mode(ifstate) == IF_IN_ELSE_BRANCH )
+							if_get_last_mode(ifstate) == IF_IN_ELSEBRANCH )
 				{
 					/* jump out of branch to end of conditional block. */
 					obj_add_jmp(&dat,
@@ -667,8 +670,7 @@ struct obj_dat parse_main(struct token *tokens)
 						create_jmp_label(
 							if_get_last_id(ifstate),
 							-1,
-							1 )
-						),
+							1 ),
 						stype);
 						
 					ifdat_pop(ifstate);
@@ -800,14 +802,14 @@ struct obj_dat parse_main(struct token *tokens)
 			{
 				
 				obj_add_func(dat.last, new_func(), stype);
-				tmpfunc = obj_get_last_func(dat.list, stype);
+				tmpfunc = obj_get_last_func(dat.last, stype);
 				tmpfunc->id = get_funcname_id(tmp_name->dat_str[0]);
 				
 				if (tmpfunc->id == F_UNKNOWN)
 					vm_err(	tmp_tok->fn,tmp_tok->line,tmp_tok->col,
 						"unknown function.");
 				
-				free_tokens(l_expr);
+				free_tokens(&l_expr);
 				
 				blvl = 0;
 				
@@ -833,7 +835,7 @@ struct obj_dat parse_main(struct token *tokens)
 			{
 				
 				obj_add_func(dat.last, new_func(), stype);
-				tmpfunc = obj_get_last_func(dat.list, stype);
+				tmpfunc = obj_get_last_func(dat.last, stype);
 				tmpfunc->id = get_funcname_id(tmp_name->dat_str[1]);
 				
 				if (tmpfunc->id == F_UNKNOWN)
@@ -842,7 +844,7 @@ struct obj_dat parse_main(struct token *tokens)
 				
 				tmpfunc->obj_name = str_cpy(tmp_name->dat_str[0]);
 				
-				free_tokens(l_expr);
+				free_tokens(&l_expr);
 				
 				blvl = 0;
 				
@@ -851,7 +853,7 @@ struct obj_dat parse_main(struct token *tokens)
 			else if (token_if_sym(tmp_tok, "="))
 			{
 				obj_add_func(dat.last, new_func(), stype);
-				tmpfunc = obj_get_last_func(dat.list, stype);
+				tmpfunc = obj_get_last_func(dat.last, stype);
 				
 				tmpfunc->ret = create_idnt_two_names(tmp_name->dat_str[0], tmp_name->dat_str[1]);
 				
@@ -867,7 +869,7 @@ struct obj_dat parse_main(struct token *tokens)
 			if (token_if_sym(tmp_tok, "="))
 			{
 				obj_add_func(dat.last, new_func(), stype);
-				tmpfunc = obj_get_last_func(dat.list, stype);
+				tmpfunc = obj_get_last_func(dat.last, stype);
 				
 				tmpfunc->ret = create_idnt_reg(
 					parse_ret_reg(tmp_name->dat_str[0])
@@ -905,7 +907,7 @@ struct obj_dat parse_main(struct token *tokens)
 		case P_SCRIPT_GET_OPEN_PARA:
 			if (token_if_sym(tmp_tok, "("))
 			{
-				free_tokens(l_expr);
+				free_tokens(&l_expr);
 				
 				blvl = 0;
 				
@@ -973,7 +975,7 @@ struct obj_dat parse_main(struct token *tokens)
 							0 ),
 						stype);
 					
-					if_set_last_mode(IF_OPEN);
+					if_set_last_mode(ifstate, IF_OPEN);
 					
 				}
 				else if (ifstate->if_level >= 0 ||

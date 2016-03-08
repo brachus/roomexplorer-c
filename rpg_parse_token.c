@@ -54,7 +54,7 @@ void print_tokens(struct token* tokens)
 	}
 	
 }
-
+/*SUSPECT*/
 void add_token(struct token* tokens, int type, int line, int col, char* fname)
 {
 	if (!tokens->first)
@@ -76,12 +76,14 @@ void add_token(struct token* tokens, int type, int line, int col, char* fname)
 	
 }
 
+/*SUSPECT*/
 void add_cpy_token(struct token *tokens, struct token_l *tok)
 {
 	if (!tokens->first)
 	{
 		tokens->first = cpy_token(tok);
-		tokens->last = tokens->last;
+		printf("copied token");
+		tokens->last = tokens->first;
 	}
 	else
 	{
@@ -149,7 +151,8 @@ void free_token_l(struct token_l *in)
 
 void free_tokens(struct token *in)
 {
-	free_token_l(in->first);
+	if (in->first != 0)
+		free_token_l(in->first);
 	in->first = 0;
 	in->last = 0;
 }
@@ -159,10 +162,14 @@ int token_nnames(struct token_l *in)
 	int a = 0;
 	if (in->type == T_NAME)
 	{
+		a = 1;
 		if (in->dat_str[1]->length > 0 )
+		{
 			a = 2;
-		if (in->dat_str[1]->length > 0 )
-			a++;
+			if (in->dat_str[2]->length > 0 )
+				a++;
+		}
+			
 	}
 	
 	return a;
@@ -170,8 +177,9 @@ int token_nnames(struct token_l *in)
 
 int token_if_sym(struct token_l *tok, char *sym)
 {
+		
 	if (	tok->type == T_SYM &&
-			str_cmp_cstr(tok->dat_str[0], "=")	)
+			str_cmp_cstr(tok->dat_str[0], sym)	)
 		return 1;
 	else
 		return 0;

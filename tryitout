@@ -4,8 +4,5 @@ gcc -ansi main.c \
 	rpg_err.c \
 	rpg_parse_token.c\
 	rpg_obj_struct.c\
-	rpg_parse_expr.c
-echo
-echo ///////   RUNNING   ////////
-echo
-./a.out
+	rpg_parse_expr.c\
+	rpg_parse_main.c
