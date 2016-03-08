@@ -19,7 +19,6 @@ char *funcnames[] =
 	"exit"
 }
 
-
 int match_sname(struct str *in)
 {
 	if 	(	str_cmp_cstr(in, "init")	)
@@ -215,18 +214,166 @@ struct func *obj_get_last_func(struct obj *in, int stype)
 	return 0;
 }
 
+void func_add_arg(struct func *in, struct idnt *addme)
+{
+	if (!in->args)
+	{
+		in->args = addme;
+		in->args->last = in->args;
+	}
+	else
+	{
+		in->args->last->next = addme;
+		in->args->last = in->args->last->next;
+	}
+}
 
+int obj_find_label(struct obj *in, struct str *findme, int stype)
+{
+	struct func *tmp;
+	int tidx = 0;
+	
+	if (stype == S_INIT)
+		tmp = in->init;
+	else if (stype == S_BODY)
+		tmp = in->body;
+	else if (stype == S_TERM)
+		tmp = in->term;
+	
+	
+	
+	while (tmp != 0)
+	{
+		if (tmp->id == F_LABEL)
+			if (  str_cmp(tmp->label_name, findme)  )
+				return tidx;
+		
+		tmp = tmp->next;
+		tidx++;
+	}
+	
+	return -1;
+}
 
+/* go through each jmp/ifjmp function and take label_name
+ * and find label idx; idx of where to jump to within
+ * a script.
+ */
+void obj_jmp_add_label_idx(struct obj *in, int stype)
+{
+	struct func *tmp;
+	
+	if (stype == S_INIT)
+		tmp = in->init;
+	else if (stype == S_BODY)
+		tmp = in->body;
+	else if (stype == S_TERM)
+		tmp = in->term;
+	
+	while (tmp != 0)
+	{
+		if (tmp->id == F_JMP || tmp->id == F_IF_JMP)
+			tmp->label = obj_find_label(in, tmp->label_name, stype);
+		
+		tmp = tmp->next;
+	}
+}
 
+void idnt_fill_idxs(struct obj_dat *odat, struct idnt *in)
+{
+	if (in->type == IDNT_OBJVAR || in->type == IDNT_OBJ)
+		in->idx = get_obj_idx(odat, in->obj_name);
+				
+	if (in->next != 0)
+		idnt_fill_idxs(odat, in->next);
+}
 
+void func_fill_idxs(struct obj_dat *odat, struct func *in)
+{
+	if (in->obj_name != 0)
+		in->obj_idx = get_obj_idx(odat, in->obj_name);
+	
+	if (in->ret != 0)
+		idnt_fill_idx(odat, in->ret);
+	
+	if (in->args != 0)
+		idnt_fill_idx(odat, in->args);
+	
+	/* move on to next */
+	if (in->next != 0)
+		func_fill_idxs(odat, in->next);
+}
 
+/* go through each variable.
+ * if its of type name
+ * or a list of names,
+ * use get obj idx and 
+ * set dat_int.
+ */
+void var_fill_idxs(struct obj_dat *odat, struct var *in)
+{
+	if (in->type == V_NAME)
+		in->dat_int = get_obj_idx(odat, in->dat_str);
+	else if (in->type == V_LIST && in->dat_list != 0)
+		var_fill_idxs(odat, in->dat_list);
+	
+	if (in->list_next != 0)
+		var_fill_idxs(odat, in->list_next);
+	
+	/* move on to next */
+	if (in->next != 0)
+		var_fill_idxs(odat, in->next);
+}
 
-struct obj_dat *parse_main(struct token *tokens)
+/* do something within each object */
+void obj_do_each(struct obj_dat *in)
+{
+	struct obj *otmp = in->first;
+	struct func *ftmp;
+	
+	while (otmp != 0)
+	{
+		/* go through each variable in vars */		
+		if (otmp->vars != 0)
+			var_fill_idxs(in, otmp->vars);
+		
+		/* FIXME add default predefs in vars */
+		
+		/* go through each function in each script */
+		if (otmp->init != 0)
+			func_fill_idxs(in, otmp->init);
+		if (otmp->body != 0)
+			func_fill_idxs(in, otmp->body);
+		if (otmp->term != 0)
+			func_fill_idxs(in, otmp->term);
+		
+		otmp = otmp->next;
+	}
+	
+}
+
+int get_obj_idx(struct obj_dat *in, struct str *obj_str)
+{
+	int tidx = 0;
+	struct obj *tmp = in->first;
+	
+	while (tmp != 0)
+	{
+		if (  str_cmp(tmp->name, obj_str)  )
+			return tidx;
+		tmp = tmp->next;
+		tidx++;
+	}
+	
+	return -1;
+}
+
+struct obj_dat parse_main(struct token *tokens)
 {
 	
 	int md, hold, regn
 		stype, didsnames,
-		dostmnt;
+		dostmnt, blvl;
 	
 	md = P_OPEN;
 	
@@ -430,7 +577,7 @@ struct obj_dat *parse_main(struct token *tokens)
 				{
 					md = P_SCRIPT_GET_PARA_COLON;
 					
-					if (ifstate->if_level == -1 ||
+					if (	ifstate->if_level == -1 ||
 							if_get_last_mode(ifstate) == IF_IN_BRANCH ||
 							if_get_last_mode(ifstate) == IF_IN_ELSEBRANCH)
 					{
@@ -460,9 +607,9 @@ struct obj_dat *parse_main(struct token *tokens)
 				}
 				else if (str_cmp_cstr(tmp_name -> dat_str[0],"else"))
 				{
-					if (ifstate->if_level == -1 ||
-						if_get_last_mode(ifstate) == IF_IN_BRANCH ||
-						if_get_last_mode(ifstate) == IF_IN_ELSEBRANCH)
+					if (	ifstate->if_level == -1 ||
+							if_get_last_mode(ifstate) == IF_IN_BRANCH ||
+							if_get_last_mode(ifstate) == IF_IN_ELSEBRANCH  )
 						vm_err(	tmp_tok->fn,tmp_tok->line,tmp_tok->col,
 							"unexpected else branch.");
 					else if (if_get_last_mode(ifstate) == IF_OPEN)
@@ -479,9 +626,14 @@ struct obj_dat *parse_main(struct token *tokens)
 			else if ( token_if_sym(tmp_tok, "}") )
 			{
 				if (ifstate->level == -1)
-					md = P_OPEN_PREDEF;
+				{
+					obj_jmp_add_label_idx(dat.last, stype);
 					
-				else if (if_get_last_mode(ifstate) == IF_IN_BRANCH ||
+					/* close the script block */
+					md = P_OPEN_PREDEF;
+				}
+					
+				else if (	if_get_last_mode(ifstate) == IF_IN_BRANCH ||
 							if_get_last_mode(ifstate) == IF_IN_ELSE_BRANCH )
 				{
 					/* jump out of branch to end of conditional block. */
@@ -551,9 +703,9 @@ struct obj_dat *parse_main(struct token *tokens)
 				vm_err(	tmp_tok->fn,tmp_tok->line,tmp_tok->col,
 					"expected script content OR ending brace.");
 			
-			if (ifstate->if_level >= 0 &&
-				if_get_last_mode(ifstate) == IF_OPEN &&
-				dostmnt)
+			if (	ifstate->if_level >= 0 &&
+					if_get_last_mode(ifstate) == IF_OPEN &&
+					dostmnt  )
 			{
 				obj_add_label(&dat,
 					create_jmp_label(
@@ -655,6 +807,10 @@ struct obj_dat *parse_main(struct token *tokens)
 					vm_err(	tmp_tok->fn,tmp_tok->line,tmp_tok->col,
 						"unknown function.");
 				
+				free_tokens(l_expr);
+				
+				blvl = 0;
+				
 				md = P_SCRIPT_GET_ARG;
 			}
 			else if (token_if_sym(tmp_tok, ":"))
@@ -686,6 +842,10 @@ struct obj_dat *parse_main(struct token *tokens)
 				
 				tmpfunc->obj_name = str_cpy(tmp_name->dat_str[0]);
 				
+				free_tokens(l_expr);
+				
+				blvl = 0;
+				
 				md = P_SCRIPT_GET_ARG;
 			}
 			else if (token_if_sym(tmp_tok, "="))
@@ -693,7 +853,6 @@ struct obj_dat *parse_main(struct token *tokens)
 				obj_add_func(dat.last, new_func(), stype);
 				tmpfunc = obj_get_last_func(dat.list, stype);
 				
-				/* TODO: set return to tmp_name */
 				tmpfunc->ret = create_idnt_two_names(tmp_name->dat_str[0], tmp_name->dat_str[1]);
 				
 				md = P_SCRIPT_GET_FNAME;
@@ -710,10 +869,138 @@ struct obj_dat *parse_main(struct token *tokens)
 				obj_add_func(dat.last, new_func(), stype);
 				tmpfunc = obj_get_last_func(dat.list, stype);
 				
-				/* ? */
-				tmpfunc->ret = create_idnt_reg(tmp_name->dat_str[0]);
+				tmpfunc->ret = create_idnt_reg(
+					parse_ret_reg(tmp_name->dat_str[0])
+						);
+			}
+			else
+				vm_err(	tmp_tok->fn,tmp_tok->line,tmp_tok->col,
+					"expected \"=\".");
+			
+			break;
+		
+		case P_SCRIPT_GET_FNAME:
+			if (tmp_tok->type == T_NAME && token_nnames(tmp_tok) == 1)
+			{
+				tmpfunc->id = get_funcname_id(tmp_tok->dat_str[0]);
+				md = P_SCRIPT_GET_OPEN_PARA;
+			}
+			else if (tmp_tok->type == T_NAME && token_nnames(tmp_tok) == 2)
+			{
+				tmpfunc->id = get_funcname_id(tmp_tok->dat_str[1]);
+				
+				if (tmp_tok->dat_str[0]->length == 0)
+					tmpfunc->obj_name = str_cpy(dat.last->name);
+				else
+					tmpfunc->obj_name = str_cpy(tmp_tok->dat_str[0]);
+					
+				md = P_SCRIPT_GET_OPEN_PARA;
+			}
+			else
+				vm_err(	tmp_tok->fn,tmp_tok->line,tmp_tok->col,
+					"expected single or double name.");
+			
+			break;
+		
+		case P_SCRIPT_GET_OPEN_PARA:
+			if (token_if_sym(tmp_tok, "("))
+			{
+				free_tokens(l_expr);
+				
+				blvl = 0;
+				
+				md = P_SCRIPT_GET_ARG;
+			}
+				
+			else
+				vm_err(	tmp_tok->fn,tmp_tok->line,tmp_tok->col,
+					"expected \"(\"."  );
+			
+			break;
+		
+		case P_SCRIPT_GET_ARG:
+					
+			if (tmp_tok->type == T_EOF)
+				vm_err(	tmp_tok->fn,tmp_tok->line,tmp_tok->col,
+					"unexpected EOF."  );
+			else if (blvl == 0)
+			{
+				if ( token_if_sym(tmp_tok, ",") || token_if_sym(tmp_tok, ")") )
+				{
+					if (l_expr.first != 0)
+						func_add_arg(tmpfunc, parse_lexpr_idnt(&l_expr));
+					
+					if (token_if_sym(tmp_tok, ")"))
+						md = P_SCRIPT_GET_SEMICOLON;
+				}
+				else  
+				{
+					if (token_if_sym(tmp_tok, "["))
+						blvl++;
+					add_cpy_token(&l_expr, tmp_tok);
+				}
+				
+			}
+			else
+			{
+				if (token_if_sym(tmp_tok, "]"))
+					blvl--;
+				add_cpy_token(&l_expr, tmp_tok);
 			}
 			
+			break;
+		
+		case P_SCRIPT_GET_SEMICOLON:
+			if (token_if_sym(tmp_tok, ";"))
+			{
+				if (ifstate->if_level >= 0 ||
+						if_get_last_mode(ifstate) == IF_IN_BRANCH_ONELINE)
+				{
+					/* close branch */
+					/* jump out of branch to end of conditional block. */
+					obj_add_jmp(&dat,
+						create_jmp_label(
+							if_get_last_id(ifstate),
+							-1,
+							1 ),
+						stype);
+					
+					/* mark end of branch */
+					obj_add_label(&dat,
+						create_jmp_label(
+							if_get_last_id(ifstate),
+							if_get_last_bcntr(ifstate),
+							0 ),
+						stype);
+					
+					if_set_last_mode(IF_OPEN);
+					
+				}
+				else if (ifstate->if_level >= 0 ||
+					if_get_last_mode(ifstate) == IF_IN_ELSEBRANCH_ONELINE)
+				{
+					/* close cond. block */
+					obj_add_label(&dat,
+						create_jmp_label(
+							if_get_last_id(ifstate),
+							-1,
+							0 ),
+						stype);
+					
+					ifdat_pop(ifstate);
+				}
+				
+				md = P_SCRIPT_OPEN;
+			}
+			else
+				vm_err(	tmp_tok->fn,tmp_tok->line,tmp_tok->col,
+					"expected \";\"."  );
+					
+			break;
+		
+		case P_ERR:
+			vm_err(	tmp_tok->fn,tmp_tok->line,tmp_tok->col,
+					"unspecified error."  );
 			break;
 			
 		default:
@@ -725,5 +1012,15 @@ struct obj_dat *parse_main(struct token *tokens)
 		else
 			hold = 0;
 	}
+	
+	if (md != P_OPEN)
+		vm_err(	tmp_tok->fn,tmp_tok->line,tmp_tok->col,
+			"unexpected EOF.");
+	
+	
+	
+	
+	
+	return dat;
 	
 }

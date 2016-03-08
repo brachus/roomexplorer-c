@@ -8,7 +8,46 @@
 #include "rpg_obj_struct.h"
 #include "rpg_parse_expr.h"
 
-
+struct idnt *parse_lexpr_idnt(struct token *tokens)
+{
+	struct idnt *nidnt = new_idnt();
+	struct var *nvar;
+	
+	nvar = parse_literal_expr(tokens);
+	
+	if (nvar->type = V_NAME)
+	{
+		if (!nvar->dat_str_1)
+		{
+			if (parse_ret_reg(nvar->dat_str) != -1)
+			{
+				nidnt->type = IDNT_REG;
+				nidnt->idx = parse_ret_reg(nvar->dat_str);
+			}
+			else
+			{
+				nidnt->type = IDNT_OBJ;
+				nidnt->obj_name = str_cpy(nvar->dat_str);
+			}
+			
+		}
+		else
+		{
+			nidnt->type = IDNT_OBJVAR;
+			nidnt->obj_name = str_cpy(nvar->dat_str);
+			nidnt->var_name = str_cpy(nvar->dat_str_1);
+		}
+		
+		free_var(nvar);
+	}
+	else
+	{
+		nidnt->type = IDNT_VAR;
+		nidnt->use_var = nvar;
+	}
+	
+	return nidnt;
+}
 
 /* creates new var from literal expression (tokens) */
 struct var *parse_literal_expr(struct token *tokens)

@@ -53,7 +53,7 @@ struct var
 	struct str 	*dat_str_1; /* for names.*/
 	struct str 	*dat_str_2;
 	
-	int			dat_int;
+	int			dat_int; /* if var of type name, the will be obj idx of first name */
 	float		dat_float;
 	
 	/* if var itself is a list, this references first item in list. */
@@ -81,7 +81,7 @@ struct idnt
 	 * IDNT_VAR |	identifer contains its own variable data; "use_var"
 	 * IDNT_OBJVAR |
 	 * IDNT_OBJ
-	 * */
+	 */
 	 
 	/* register number OR obj_idx */
 	int idx;
@@ -147,17 +147,23 @@ struct var *new_var(void);
 void free_var(struct var *in);
 int var_search_str(struct var *vars, struct str *find);
 void var_add_str(struct var *vars, struct str *add);
+void add_var(struct var *vars, struct var *addme);
 void add_new_var(struct var *vars);
 void print_var_val(struct var *in);
 void print_var(struct var *in);
 void idnt_init(struct idnt *in);
 struct idnt *new_idnt(void);
+struct idnt *create_idnt_two_names(struct str *n0, struct str *n1);
+struct idnt *create_idnt_reg(int regn);
 void func_init(struct func *in);
 struct func *new_func(void);
+struct func *create_func_label(struct str *labelstr);
+struct func *create_func_jmp(int id, struct str *labelstr, int regn);
 void obj_init(struct obj *in);
 struct obj *new_obj(void);
 void obj_dat_init(struct obj_dat *in);
 void add_obj(struct obj_dat *in);
+void obj_add_var(struct obj *in, struct var *addvar);
 void obj_add_new_var(struct obj *in);
 void obj_add_var(struct obj *in,  struct var *addvar);
 void obj_add_func(struct obj *in, struct func *addme, int stype);

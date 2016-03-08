@@ -11,8 +11,6 @@ void token_init(struct token* tokens)
 	tokens->last = NULL;
 }
 
-
-
 void print_tokens(struct token* tokens)
 {
 	struct token_l *tmp;
@@ -134,9 +132,9 @@ struct token_l *cpy_token(struct token_l *in)
 
 void free_token_l(struct token_l *in)
 {
-	if (in->next != NULL)
+	if (in->next != 0)
 		free_token_l(in->next);
-	in->next = NULL;
+	in->next = 0;
 	
 	free_str(in->dat_str[0]);
 	free_str(in->dat_str[1]);
@@ -152,8 +150,8 @@ void free_token_l(struct token_l *in)
 void free_tokens(struct token *in)
 {
 	free_token_l(in->first);
-	in->first = NULL;
-	in->last = NULL;
+	in->first = 0;
+	in->last = 0;
 }
 
 int token_nnames(struct token_l *in)

@@ -114,8 +114,6 @@ void add_new_var(struct var *vars)
 	vars->last = vars->last->next;
 }
 
-
-
 void print_var_val(struct var *in)
 {
 	
@@ -134,14 +132,14 @@ void print_var_val(struct var *in)
 		break;
 	case V_NAME:
 		str_print(in->dat_str);
-		if (in->dat_str_1 != NULL)
+		if (in->dat_str_1 != 0)
 			str_print(in->dat_str_1);
-		if (in->dat_str_2 != NULL)
+		if (in->dat_str_2 != 0)
 			str_print(in->dat_str_2);
 		break;
 	case V_LIST:
 		printf("[");
-		if (in->dat_list != NULL)
+		if (in->dat_list != 0)
 			print_var_val(in->dat_list);
 		printf("]");
 		break;
@@ -152,7 +150,7 @@ void print_var_val(struct var *in)
 		break;
 	}
 	
-	if (in->list_next != NULL)
+	if (in->list_next != 0)
 	{
 		printf(",");
 		print_var_val(in->list_next);
@@ -180,25 +178,21 @@ void print_var(struct var *in, char *pad)
 	
 	printf("\n");
 	
-	if (in->next != NULL)
+	if (in->next != 0)
 		print_var(in->next, pad);
 }
-
-
-
-
 
 void idnt_init(struct idnt *in)
 {
 	in->type = IDNT_NULL;
 	in->idx = -1;
 	
-	in->obj_name = NULL;
-	in->var_name = NULL;
+	in->obj_name = 0;
+	in->var_name = 0;
 	
-	in->use_var = NULL;
-	in->next = NULL;
-	in->last = in;
+	in->use_var = 0;
+	in->next = 0;
+	in->last = 0;
 }
 
 struct idnt *new_idnt(void)
@@ -293,16 +287,16 @@ struct func *create_func_jmp(int id, struct str *labelstr, int regn)
 
 void obj_init(struct obj *in)
 {
-	in->type = NULL;
-	in->name = NULL;
+	in->type = 0;
+	in->name = 0;
 	
-	in->vars = NULL;
+	in->vars = 0;
 	
-	in->init = NULL;
-	in->body = NULL;
-	in->term = NULL;
+	in->init = 0;
+	in->body = 0;
+	in->term = 0;
 	
-	in->next = NULL;
+	in->next = 0;
 	
 }
 
@@ -336,8 +330,6 @@ void add_obj(struct obj_dat *in)
 		in->last = in->last->next;
 	}
 }
-
-
 
 void obj_add_var(struct obj *in, struct var *addvar)
 {
