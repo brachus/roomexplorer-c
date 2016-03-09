@@ -134,9 +134,17 @@ void print_var_val(struct var *in)
 	case V_NAME:
 		str_print(in->dat_str);
 		if (in->dat_str_1 != 0)
+		{
+			printf(".");
 			str_print(in->dat_str_1);
+		}
 		if (in->dat_str_2 != 0)
+		{
+			printf(".");
 			str_print(in->dat_str_2);
+		}
+			
+		printf("  (%d)", in->dat_int);
 		break;
 	case V_LIST:
 		printf("[");
@@ -160,20 +168,22 @@ void print_var_val(struct var *in)
 
 void print_var(struct var *in, char *pad)
 {	
+	
+	printf("%s", pad);
+	
 	if (!in)
 	{
 		printf("<nothing>\n");
 		return;
 	}
 	
-	printf("%s", pad);
 		
 	if (!in->name || in->name->length == 0)
 		printf("<noname>");
 	else
 		str_print(in->name);
 	
-	printf(":\t");
+	printf(":  ");
 	
 	print_var_val(in);
 	
@@ -194,6 +204,44 @@ void idnt_init(struct idnt *in)
 	in->use_var = 0;
 	in->next = 0;
 	in->last = 0;
+}
+
+void print_idnt(struct idnt *in, char *pad)
+{
+	printf("%s", pad);
+	
+	if (!in)
+	{
+		printf("<nothing>\n");
+		return;
+	}
+	
+	switch (in->type)
+	{
+	case IDNT_NULL:
+		printf("null\n");
+		break;
+	case IDNT_OBJ:
+		str_print(in->obj_name);
+		printf("\n");
+		break;
+	case IDNT_OBJVAR:
+		str_print(in->obj_name);
+		printf(".");
+		str_print(in->var_name);
+		printf("\n");
+		break;
+	case IDNT_REG:
+		printf("r%d\n", in->idx);
+		break;
+	case IDNT_VAR:
+		print_var(in->use_var, pad);
+		break;
+	default:break;
+	}
+	
+	if (in->next != 0)
+		print_idnt(in->next, pad);
 }
 
 struct idnt *new_idnt()
@@ -334,7 +382,6 @@ void add_obj(struct obj_dat *in)
 
 void obj_add_var(struct obj *in, struct var *addvar)
 {
-	printf("attempting to add var ... \n");
 	if (!in->vars)
 	{
 		in->vars = addvar;
@@ -398,3 +445,27 @@ void obj_add_func(struct obj *in, struct func *addme, int stype)
 	}
 }
 
+void print_objs(struct obj_dat *in)
+{
+	struct obj *otmp;
+	struct var *vtmp;
+	struct func *ftmp;
+	struct idnt *itmp;
+	
+	
+	otmp = in->first;
+	
+	while (otmp != 0)
+	{
+		printf("\n");
+		str_print(otmp->type);
+		printf(" ");
+		str_print(otmp->name);
+		printf(":\n");
+		
+		print_var(otmp->vars, "  ");
+		
+		otmp = otmp->next;
+	}
+	
+}

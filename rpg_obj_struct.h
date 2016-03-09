@@ -7,11 +7,11 @@
 #define V_LIST	4
 #define V_NULL	-1
 
-#define IDNT_VAR -2
-#define IDNT_OBJVAR -1
-#define IDNT_OBJ -2
-#define IDNT_NULL -2
-#define IDNT_REG -1
+#define IDNT_VAR 		4
+#define IDNT_OBJVAR 	3
+#define IDNT_OBJ 		2
+#define IDNT_NULL 		0
+#define IDNT_REG 		1
 
 #define NO_OPP -1
 
@@ -19,24 +19,6 @@
 #define F_LABEL	-1
 
 
-#define P_GET_OBJ_NAME					14
-#define P_GET_OBJ_OPEN_BRACE			15
-#define p_OPEN_PREDEF					16
-#define P_GET_PREDEF_EQUALS				17
-#define P_GET_PREDEF_LITERAL			18
-#define P_GET_SCRIPT_OPEN_BRACE			19
-#define P_SCRIPT_OPEN					20
-#define P_SCRIPT_GET_IF_REG				21
-#define P_SCRIPT_GET_ELSE_IF			22
-#define P_SCRIPT_GET_IF_BRANCH_OPEN		23
-#define P_SCRIPT_GET_PARA_COLON			24
-#define P_SCRIPT_GET_PARA_EQUALS		25
-#define P_SCRIPT_GET_EQUALS				26
-#define P_SCRIPT_GET_FNAME				27
-#define P_SCRIPT_GET_OPEN_PARA			28
-#define P_SCRIPT_GET_ARG				29
-#define P_SCRIPT_GET_SEMICOLON			30
-#define P_ERR							31
 
 
 #define S_INIT	1
@@ -152,6 +134,7 @@ void add_new_var(struct var *vars);
 void print_var_val(struct var *in);
 void print_var(struct var *in, char *pad);
 void idnt_init(struct idnt *in);
+void print_idnt(struct idnt *in, char *pad);
 struct idnt *new_idnt(void);
 struct idnt *create_idnt_two_names(struct str *n0, struct str *n1);
 struct idnt *create_idnt_reg(int regn);
@@ -167,3 +150,4 @@ void obj_add_var(struct obj *in, struct var *addvar);
 void obj_add_new_var(struct obj *in);
 void obj_add_var(struct obj *in,  struct var *addvar);
 void obj_add_func(struct obj *in, struct func *addme, int stype);
+void print_objs(struct obj_dat *in);

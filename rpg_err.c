@@ -19,14 +19,16 @@ void vm_warn(char* fn, int line, int col, char* msg)
 {
 	if (vm_err_do_warn)
 	{
-		vm_err_prefix(fn, line, col);
+		if (line != 0)
+			vm_err_prefix(fn, line, col);
 		printf(" warning: %s\n", msg);
 	}
 }
 
 void vm_err(char* fn, int line, int col, char* msg)
 {
-	vm_err_prefix(fn, line, col);
+	if (line != 0)
+		vm_err_prefix(fn, line, col);
 	printf(" error: %s\n", msg);
 	
 	exit(1);

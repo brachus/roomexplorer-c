@@ -1,4 +1,16 @@
+_ grass
+{
+	.green = '0f0';
+}
+
+_ orange{.y
+='ff0';.b=
+'00f';}
+
 game main
 {
 	.apple = 1;
+	.orange = "string";
+	.tmpname = orange;
+	.tmpvarn = orange.y;
 }

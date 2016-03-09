@@ -22,11 +22,13 @@ int main(void)
 	
 	parse_tokenize(fn, &tokens);
 	
-	printf("tokens:\n");
-	print_tokens(&tokens);
+	/*printf("tokens:\n");
+	print_tokens(&tokens);*/
 	
 	
 	odat = parse_main(&tokens);
+	
+	print_objs(&odat);
 	
 	
 	return 0;

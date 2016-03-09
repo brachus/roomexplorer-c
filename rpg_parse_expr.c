@@ -52,7 +52,6 @@ struct idnt *parse_lexpr_idnt(struct token *tokens)
 /* creates new var from literal expression (tokens) */
 struct var *parse_literal_expr(struct token *tokens)
 {	
-	printf("attempting to parse literal ... \n");
 	int md, ttype, tminus, hold, i;
 	struct token_l *tmp;
 	struct var *nvar;
@@ -76,7 +75,6 @@ struct var *parse_literal_expr(struct token *tokens)
 	
 	while (tmp != NULL)
 	{
-		printf("parse_lit: md: %d\n",md);
 		switch(md)
 		{
 		case P_OPEN:

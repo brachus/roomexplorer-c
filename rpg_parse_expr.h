@@ -12,4 +12,5 @@
 
 #define MAX_LIST_NESTS		8
 
+struct idnt *parse_lexpr_idnt(struct token *tokens);
 struct var *parse_literal_expr(struct token *tokens);

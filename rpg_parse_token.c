@@ -82,7 +82,6 @@ void add_cpy_token(struct token *tokens, struct token_l *tok)
 	if (!tokens->first)
 	{
 		tokens->first = cpy_token(tok);
-		printf("copied token");
 		tokens->last = tokens->first;
 	}
 	else

@@ -7,13 +7,7 @@
 #define V_LIST	4
 #define V_NULL	-1
 
-#define IDNT_VAR -2
-#define IDNT_OBJVAR -1
-#define IDNT_OBJ -2
-#define IDNT_NULL -2
-#define IDNT_REG -1
 
-#define NO_OPP -1
 
 
 #define P_GET_OBJ_NAME					14

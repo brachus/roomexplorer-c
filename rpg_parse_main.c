@@ -313,8 +313,10 @@ void func_fill_idxs(struct obj_dat *odat, struct func *in)
  */
 void var_fill_idxs(struct obj_dat *odat, struct var *in)
 {
+	
 	if (in->type == V_NAME)
 		in->dat_int = get_obj_idx(odat, in->dat_str);
+		
 	else if (in->type == V_LIST && in->dat_list != 0)
 		var_fill_idxs(odat, in->dat_list);
 	
@@ -410,7 +412,7 @@ struct obj_dat parse_main(struct token *tokens)
 	while (tmp_tok != NULL)
 	{
 		
-		printf(" md: %d\n",md);
+		/*printf(" md: %d\n",md);*/
 		
 		switch (md)
 		{
@@ -530,11 +532,11 @@ struct obj_dat parse_main(struct token *tokens)
 		case P_GET_PREDEF_LITERAL:
 			if (	token_if_sym(tmp_tok, ";")	)
 			{
-				
 				obj_add_var(dat.last, parse_literal_expr(&l_expr));
+				dat.last->vars->last->name = str_cpy(used_predef_names->last->dat_str);
 				md = P_OPEN_PREDEF;
 			}
-			else if ( tmp_tok->type == T_EOF)
+			else if ( tmp_tok->type == T_EOF )
 				vm_err(	tmp_tok->fn,tmp_tok->line,tmp_tok->col,
 					"expected continued expression or \";\".");
 			else
@@ -1020,7 +1022,7 @@ struct obj_dat parse_main(struct token *tokens)
 			"unexpected EOF.");
 	
 	
-	
+	obj_do_each(&dat);
 	
 	
 	return dat;

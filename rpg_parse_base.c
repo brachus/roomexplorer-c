@@ -7,7 +7,7 @@
 const char * NUMERALS = "0123456789";
 const char * SYMBOLS = "{}[]<>().,=;:-#/*\\";
 const char * QUOTES = "\'\"";
-const char * LETTERS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_";
+const char * LETTERS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ__";
 const char * WHITESPACES = " \t\n";
 
 
