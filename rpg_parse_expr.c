@@ -15,7 +15,8 @@ struct idnt *parse_lexpr_idnt(struct token *tokens)
 	
 	nvar = parse_literal_expr(tokens);
 	
-	if (nvar->type = V_NAME)
+	
+	if (nvar->type == V_NAME)
 	{
 		if (!nvar->dat_str_1)
 		{

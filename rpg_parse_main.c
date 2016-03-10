@@ -10,15 +10,6 @@
 #include "rpg_func_def.h"
 
 
-#define NFUNCNAMES 4
-
-char *funcnames[] = 
-{
-	"jmp",
-	"if_jmp",
-	"println",
-	"exit"
-};
 
 int match_sname(struct str *in)
 {
@@ -193,15 +184,7 @@ void obj_add_jmp(struct obj_dat *dat, struct str *labelstr, int stype)
 	obj_add_func(dat->last, create_func_jmp(F_JMP, labelstr, -1), stype);
 }
 
-/* match an input str with an entry in global funcnames */
-int get_funcname_id(struct str *in)
-{
-	int i = 0;
-	for (i=0;i<NFUNCNAMES;i++)
-		if (str_cmp_cstr(in, funcnames[i]))
-			return i;
-	return F_UNKNOWN;
-}
+
 
 struct func *obj_get_last_func(struct obj *in, int stype)
 {
@@ -399,7 +382,7 @@ struct obj_dat parse_main(struct token *tokens)
 	struct var *used_script_names = new_var();
 	
 	struct token_l *tmp_tok;
-	struct token_l *tmp_name;
+	struct token_l *tmp_name = 0;
 	
 	struct ifdat *ifstate = new_ifdat();
 	
@@ -574,13 +557,15 @@ struct obj_dat parse_main(struct token *tokens)
 				free_token_l(tmp_name);
 				tmp_name = cpy_token(tmp_tok);
 				
+				md = P_SCRIPT_GET_PARA_COLON;
+				
 				dostmnt = 1;
 				
 				if (parse_ret_reg(tmp_tok->dat_str[0]) != -1)
 					md = P_SCRIPT_GET_EQUALS;
 				else if (str_cmp_cstr(tmp_name -> dat_str[0],"if"))
 				{
-					md = P_SCRIPT_GET_PARA_COLON;
+					
 					
 					if (	ifstate->if_level == -1 ||
 							if_get_last_mode(ifstate) == IF_IN_BRANCH ||
@@ -624,9 +609,6 @@ struct obj_dat parse_main(struct token *tokens)
 						md = P_SCRIPT_GET_ELSE_IF;
 					}
 				}
-				else
-					vm_err(	tmp_tok->fn,tmp_tok->line,tmp_tok->col,
-						"expected function name, \"if\" or \"else\".");
 			}
 			else if ( token_if_sym(tmp_tok, "}") )
 			{
@@ -933,6 +915,8 @@ struct obj_dat parse_main(struct token *tokens)
 				{
 					if (l_expr.first != 0)
 						func_add_arg(tmpfunc, parse_lexpr_idnt(&l_expr));
+					
+					free_tokens(&l_expr);
 					
 					if (token_if_sym(tmp_tok, ")"))
 						md = P_SCRIPT_GET_SEMICOLON;

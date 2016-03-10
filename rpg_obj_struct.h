@@ -25,6 +25,9 @@
 #define S_BODY	2
 #define S_TERM	4
 
+/* this needs to be the length of funcnames[] */
+#define NFUNCNAMES 4
+
 
 struct var
 {
@@ -140,6 +143,7 @@ struct idnt *create_idnt_two_names(struct str *n0, struct str *n1);
 struct idnt *create_idnt_reg(int regn);
 void func_init(struct func *in);
 struct func *new_func(void);
+void print_func(struct func *in, char *pad);
 struct func *create_func_label(struct str *labelstr);
 struct func *create_func_jmp(int id, struct str *labelstr, int regn);
 void obj_init(struct obj *in);
@@ -151,3 +155,5 @@ void obj_add_new_var(struct obj *in);
 void obj_add_var(struct obj *in,  struct var *addvar);
 void obj_add_func(struct obj *in, struct func *addme, int stype);
 void print_objs(struct obj_dat *in);
+int get_funcname_id(struct str *in);
+char *get_funcname(int id);

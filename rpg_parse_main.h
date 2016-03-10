@@ -75,7 +75,6 @@ void add_if(struct ifdat *dat, int md);
 void obj_add_label(struct obj_dat *dat, struct str *labelstr, int stype);
 void obj_add_ifjmp(struct obj_dat *dat, int regn, struct str *labelstr, int stype);
 void obj_add_jmp(struct obj_dat *dat, struct str *labelstr, int stype);
-int get_funcname_id(struct str *in);
 struct func *obj_get_last_func(struct obj *in, int stype);
 void func_add_arg(struct func *in, struct idnt *addme);
 int obj_find_label(struct obj *in, struct str *findme, int stype);

@@ -133,6 +133,9 @@ struct token_l *cpy_token(struct token_l *in)
 
 void free_token_l(struct token_l *in)
 {
+	if (!in)
+		return;
+	
 	if (in->next != 0)
 		free_token_l(in->next);
 	in->next = 0;

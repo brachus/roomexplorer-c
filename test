@@ -13,4 +13,12 @@ game main
 	.orange = "string";
 	.tmpname = orange;
 	.tmpvarn = orange.y;
+	
+	
+	init
+	{
+		tlabel:
+		.apple = exit(grass.orange);
+		println();
+	}
 }

@@ -7,6 +7,10 @@
 #include "rpg_obj_struct.h"
 #include "rpg_func_def.h"
 
+
+
+
+
 /* TODO:
  * 	 functions for freeing var, obj, func, and
  *   idnt structs. compare to free(p)
@@ -117,7 +121,6 @@ void add_new_var(struct var *vars)
 
 void print_var_val(struct var *in)
 {
-	
 	switch(in->type)
 	{
 	case V_INT:
@@ -173,7 +176,7 @@ void print_var(struct var *in, char *pad)
 	
 	if (!in)
 	{
-		printf("<nothing>\n");
+		printf("\n");
 		return;
 	}
 	
@@ -212,36 +215,41 @@ void print_idnt(struct idnt *in, char *pad)
 	
 	if (!in)
 	{
-		printf("<nothing>\n");
+		printf("");
 		return;
 	}
-	
+		
 	switch (in->type)
 	{
 	case IDNT_NULL:
-		printf("null\n");
+		printf("null");
 		break;
 	case IDNT_OBJ:
 		str_print(in->obj_name);
-		printf("\n");
 		break;
 	case IDNT_OBJVAR:
 		str_print(in->obj_name);
 		printf(".");
 		str_print(in->var_name);
-		printf("\n");
+		
+		printf("(%d)", in->idx);
 		break;
 	case IDNT_REG:
-		printf("r%d\n", in->idx);
+		printf("r%d", in->idx);
 		break;
 	case IDNT_VAR:
-		print_var(in->use_var, pad);
+		
+		print_var_val(in->use_var);
 		break;
 	default:break;
 	}
 	
 	if (in->next != 0)
+	{
+		printf(", ");
 		print_idnt(in->next, pad);
+	}
+		
 }
 
 struct idnt *new_idnt()
@@ -304,12 +312,60 @@ struct func *new_func(void)
 	return n;
 }
 
+void print_func(struct func *in, char *pad)
+{
+	printf("%s", pad);
+	
+	if (!in)
+	{
+		printf("\n");
+		return;
+	}
+	
+	if (in->id == F_LABEL)
+	{
+		str_print(in->label_name);
+		printf(":\n");
+	}
+	else
+	{
+		if (in->ret != 0)
+		{
+			print_idnt(in->ret, "");
+			printf(" = ");
+		}
+		
+		if (in->obj_name != 0)
+		{
+			str_print(in->obj_name);
+			printf(".");
+		}
+		
+		if (in->id >= 0)
+			printf("%s", get_funcname(in->id));
+		
+		printf("(");
+		
+		if (in->args != 0)
+			print_idnt(in->args, "");
+		
+		printf(")\n");
+
+	}
+	
+		
+	
+	
+	if (in->next != 0)
+		print_func(in->next, pad);
+}
+
 struct func *create_func_label(struct str *labelstr)
 {
 	struct func *n;
 	
 	n = new_func();
-	n->label_name = labelstr;
+	n->label_name = str_cpy(labelstr);
 	n->id = F_LABEL;
 	
 	return n;
@@ -322,7 +378,7 @@ struct func *create_func_jmp(int id, struct str *labelstr, int regn)
 	
 	n = new_func();
 	n->id = id;
-	n->label_name = labelstr;
+	n->label_name = str_cpy(labelstr);
 	
 	if (id == F_IF_JMP)
 	{
@@ -449,7 +505,6 @@ void print_objs(struct obj_dat *in)
 {
 	struct obj *otmp;
 	struct var *vtmp;
-	struct func *ftmp;
 	struct idnt *itmp;
 	
 	
@@ -465,7 +520,49 @@ void print_objs(struct obj_dat *in)
 		
 		print_var(otmp->vars, "  ");
 		
+		printf("  init:\n");
+		print_func(otmp->init, "    ");
+		
+		printf("  body:\n");
+		print_func(otmp->body, "    ");
+		
+		printf("  term:\n");
+		print_func(otmp->term, "    ");
+		
 		otmp = otmp->next;
 	}
 	
+}
+
+/* match an input str with an entry in global funcnames */
+int get_funcname_id(struct str *in)
+{
+	static char *funcnames[] = 
+	{
+		"jmp",
+		"if_jmp",
+		"println",
+		"exit"
+	};
+
+	int i = 0;
+	for (i=0;i<NFUNCNAMES;i++)
+		if (str_cmp_cstr(in, funcnames[i]))
+			return i;
+	return F_UNKNOWN;
+}
+
+char *get_funcname(int id)
+{
+	static char *funcnames[] = 
+	{
+		"jmp",
+		"if_jmp",
+		"println",
+		"exit"
+	};
+	
+	if (id >= 0 && id < NFUNCNAMES)
+		return funcnames[id];
+	return 0;
 }

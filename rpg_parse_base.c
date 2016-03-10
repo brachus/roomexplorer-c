@@ -4,15 +4,16 @@
 #include "rpg_parse_base.h"
 
 
-const char * NUMERALS = "0123456789";
-const char * SYMBOLS = "{}[]<>().,=;:-#/*\\";
-const char * QUOTES = "\'\"";
-const char * LETTERS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ__";
-const char * WHITESPACES = " \t\n";
+
+
+
+
+
 
 
 int is_numeral(char ch)
 {
+	static char * NUMERALS = "0123456789";
 	int i;
 	for (i=0;NUMERALS[i]!='\0';i++)
 		if (ch == NUMERALS[i])
@@ -22,6 +23,7 @@ int is_numeral(char ch)
 
 int is_symbol(char ch)
 {
+	static char * SYMBOLS = "{}[]<>().,=;:-#/*\\";
 	int i;
 	for (i=0;SYMBOLS[i]!='\0';i++)
 		if (ch == SYMBOLS[i])
@@ -31,6 +33,7 @@ int is_symbol(char ch)
 
 int is_quote(char ch)
 {
+	static char * QUOTES = "\'\"";
 	int i;
 	for (i=0;QUOTES[i]!='\0';i++)
 		if (ch == QUOTES[i])
@@ -40,6 +43,7 @@ int is_quote(char ch)
 
 int is_letter(char ch)
 {
+	static char * LETTERS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ__";
 	int i;
 	for (i=0;LETTERS[i]!='\0';i++)
 		if (ch == LETTERS[i])
@@ -49,6 +53,7 @@ int is_letter(char ch)
 
 int is_whitespace(char ch)
 {
+	static char * WHITESPACES = " \t\n";
 	int i;
 	for (i=0;WHITESPACES[i]!='\0';i++)
 		if (ch == WHITESPACES[i])
