@@ -1,8 +1,9 @@
-gcc -ansi main.c \
+gcc -ansi -lSDL2 -lSDL2_image main.c \
 	str_num.c \
 	rpg_parse_base.c \
 	rpg_err.c \
 	rpg_parse_token.c\
 	rpg_obj_struct.c\
 	rpg_parse_expr.c\
-	rpg_parse_main.c
+	rpg_parse_main.c\
+	rpg_vm_proc.c

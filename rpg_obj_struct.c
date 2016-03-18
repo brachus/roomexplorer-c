@@ -10,7 +10,6 @@
 
 
 
-
 /* TODO:
  * 	 functions for freeing var, obj, func, and
  *   idnt structs. compare to free(p)
@@ -294,6 +293,7 @@ void func_init(struct func *in)
 	in->label_name = 0;
 	in->obj_idx = -1;
 	in->obj_name = 0;
+	in->ob = 0;
 	in->ret = 0;
 	in->args = 0;
 	in->next = 0;
@@ -349,7 +349,15 @@ void print_func(struct func *in, char *pad)
 		if (in->args != 0)
 			print_idnt(in->args, "");
 		
-		printf(")\n");
+		printf(")");
+		
+		if (in->label_name != 0)
+		{
+			printf(" goto: ");
+			str_print(in->label_name);
+		}
+		
+		printf("\n");
 
 	}
 	
@@ -384,7 +392,7 @@ struct func *create_func_jmp(int id, struct str *labelstr, int regn)
 	{
 		n->args = new_idnt();
 		n->args->type = IDNT_REG;
-		n->label = regn;
+		n->args->idx = regn;
 	}
 	
 	return n;
@@ -393,6 +401,7 @@ struct func *create_func_jmp(int id, struct str *labelstr, int regn)
 void obj_init(struct obj *in)
 {
 	in->type = 0;
+	in->itype = 0;
 	in->name = 0;
 	
 	in->vars = 0;
@@ -534,17 +543,62 @@ void print_objs(struct obj_dat *in)
 	
 }
 
+static char *funcnames[] = 
+{
+	"set",
+	"println",
+	"op_add",
+	"op_sub",
+	"op_mul",
+	"op_div",
+	"op_mod",
+	"cmp_equal",
+	"cmp_nequal",
+	"cmp_greater",
+	"cmp_lesser",
+	"cmp_greatequal",
+	"cmp_lessequal",
+	"if_jmp",
+	"jmp",
+	"term",
+	"term_vm",
+	"next_frame", /* loop */
+	"sleep",
+	"key",
+	"key_down",
+	"key_up",
+	"key_move",
+	"fade_var",
+	"start",
+	"stop",
+	"activate",
+	"deactivate",
+	"randint",
+	"cam_focus",
+	"cam_unfocus",
+	"clip",
+	"aactors_clear",
+	"atmaps_clear",
+	"keys_disable",
+	"keys_enable",
+	"sprt_fill_layer",
+	"tmap_fill_layer",
+	"msg_clear",
+	"msg_send",
+	"msg_check",
+	"open",
+	"close",
+	"setmode",
+	"playsnd",
+	"stopsnd",
+	"stopall",
+	"additem",
+	"dropitem"
+};
+
 /* match an input str with an entry in global funcnames */
 int get_funcname_id(struct str *in)
 {
-	static char *funcnames[] = 
-	{
-		"jmp",
-		"if_jmp",
-		"println",
-		"exit"
-	};
-
 	int i = 0;
 	for (i=0;i<NFUNCNAMES;i++)
 		if (str_cmp_cstr(in, funcnames[i]))
@@ -554,14 +608,6 @@ int get_funcname_id(struct str *in)
 
 char *get_funcname(int id)
 {
-	static char *funcnames[] = 
-	{
-		"jmp",
-		"if_jmp",
-		"println",
-		"exit"
-	};
-	
 	if (id >= 0 && id < NFUNCNAMES)
 		return funcnames[id];
 	return 0;

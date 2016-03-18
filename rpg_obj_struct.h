@@ -26,7 +26,7 @@
 #define S_TERM	4
 
 /* this needs to be the length of funcnames[] */
-#define NFUNCNAMES 4
+
 
 
 struct var
@@ -96,6 +96,7 @@ struct func
 	int obj_idx;
 	/* may be needed for object creation. */
 	struct str *obj_name; 
+	struct obj *ob;
 	
 	struct idnt *ret; /* NULL if no return. */
 	
@@ -108,6 +109,8 @@ struct func
 struct obj
 {
 	struct str *type;
+	int itype;
+	
 	struct str *name;
 	
 	/* vars list */

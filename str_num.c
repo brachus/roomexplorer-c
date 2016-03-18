@@ -103,11 +103,11 @@ char str_idx(struct str* in, int idx)
 
 char *str_to_cstr(struct str* in)
 {
-	char *out = malloc(65);
+	char *out = malloc(in->length);
 	int i = 0;
 	struct str_l *tmp = in->first;
 	
-	while (i < 64 && tmp != NULL)
+	while (i < in->length && tmp != 0)
 	{
 		out[i] = tmp->dat;
 		tmp = tmp->next;
@@ -126,7 +126,7 @@ void str_del(struct str *in)
 	
 	tmp = in->first;
 	
-	while (tmp != NULL)
+	while (tmp != 0)
 	{
 		n = tmp->next;
 		free(tmp);
@@ -170,7 +170,7 @@ int str_cmp(struct str *a, struct str *b)
 		tmpb = tmpb->next;
 	}
 	
-	return 1; /* return true even if lengths aren't equal, for now. */
+	return 0;
 }
 
 int str_cmp_cstr(struct str *a, char *b)

@@ -6,11 +6,6 @@
 
 
 
-
-
-
-
-
 int is_numeral(char ch)
 {
 	static char * NUMERALS = "0123456789";
@@ -43,7 +38,7 @@ int is_quote(char ch)
 
 int is_letter(char ch)
 {
-	static char * LETTERS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ__";
+	static char * LETTERS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_";
 	int i;
 	for (i=0;LETTERS[i]!='\0';i++)
 		if (ch == LETTERS[i])

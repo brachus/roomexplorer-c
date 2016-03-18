@@ -7,6 +7,9 @@
 #include "rpg_parse_token.h"
 #include "rpg_obj_struct.h"
 #include "rpg_parse_expr.h"
+#include "rpg_media_struct.h"
+
+
 
 struct idnt *parse_lexpr_idnt(struct token *tokens)
 {
@@ -126,7 +129,10 @@ struct var *parse_literal_expr(struct token *tokens)
 					
 					md = P_ARRAY_GET_ITEM;
 				}
-					
+				else if ( str_cmp_cstr(tmp->dat_str[0],"{") )
+					md = P_OPEN_MEDIA;
+				else
+					vm_err(tmp->fn, tmp->line, tmp->col, "unexpected token.");
 				break;
 			default:
 				break;
@@ -240,6 +246,23 @@ struct var *parse_literal_expr(struct token *tokens)
 		case P_EOF:
 			if (tmp->type != T_EOF)
 				vm_err(tmp->fn, tmp->line, tmp->col, "expected end of literal.");
+			break;
+		case P_OPEN_MEDIA:
+			if (tmp->type == T_NAME && str_cmp_cstr(tmp->dat_str[0],"img"))
+				md = P_IMG_GETSTR;
+			else if (tmp->type == T_NAME && str_cmp_cstr(tmp->dat_str[0],"snd"))
+				md = P_SND_GETSTR;
+			else
+				vm_err(tmp->fn, tmp->line, tmp->col, "expected name \"img\" or \"snd\".");
+			break;
+		case P_IMG_GETSTR:
+			/* for media, create a list of int indexes to media lib.  */
+			nvar = new_var();
+			nvar->type = V_LIST;
+			
+			/* UNFINISHED */
+			break;
+		case P_SND_GETSTR:
 			break;
 		default:
 			break;

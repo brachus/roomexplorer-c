@@ -1,11 +1,4 @@
-_ grass
-{
-	.green = '0f0';
-}
 
-_ orange{.y
-='ff0';.b=
-'00f';}
 
 game main
 {
@@ -17,8 +10,7 @@ game main
 	
 	init
 	{
-		tlabel:
-		.apple = exit(grass.orange);
-		println();
+		println('hello, world');
 	}
 }
+

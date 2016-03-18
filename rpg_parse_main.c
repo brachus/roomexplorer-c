@@ -275,7 +275,11 @@ void idnt_fill_idxs(struct obj_dat *odat, struct idnt *in)
 void func_fill_idxs(struct obj_dat *odat, struct func *in)
 {
 	if (in->obj_name != 0)
+	{
 		in->obj_idx = get_obj_idx(odat, in->obj_name);
+		in->ob = get_obj_pntr(odat, in->obj_name);
+	}
+		
 	
 	if (in->ret != 0)
 		idnt_fill_idxs(odat, in->ret);
@@ -323,7 +327,10 @@ void obj_do_each(struct obj_dat *in)
 		if (otmp->vars != 0)
 			var_fill_idxs(in, otmp->vars);
 		
-		/* FIXME add default predefs in vars */
+		/* FIXME add default vars */
+		
+		/* take type str and determine type enum */
+		obj_do_itype(otmp);
 		
 		/* go through each function in each script */
 		if (otmp->init != 0)
@@ -352,6 +359,31 @@ int get_obj_idx(struct obj_dat *in, struct str *obj_str)
 	}
 	
 	return -1;
+}
+
+struct obj *get_obj_pntr(struct obj_dat *in, struct str *obj_str)
+{
+	struct obj *tmp = in->first;
+	
+	if (!obj_str)
+		return 0;
+	
+	while (tmp != 0)
+	{
+		if (  str_cmp(tmp->name, obj_str)  )
+			return tmp;
+		tmp = tmp->next;
+	}
+	
+	return 0;
+}
+
+void obj_do_itype(struct obj *in)
+{
+	if (  str_cmp_cstr(in->type, "game")  )
+		in->itype = O_GAME;
+	else
+		in->itype = O_NONE;
 }
 
 struct obj_dat parse_main(struct token *tokens)
@@ -395,7 +427,7 @@ struct obj_dat parse_main(struct token *tokens)
 	while (tmp_tok != NULL)
 	{
 		
-		/*printf(" md: %d\n",md);*/
+		printf(" md: %d\n",md);
 		
 		switch (md)
 		{
@@ -565,13 +597,13 @@ struct obj_dat parse_main(struct token *tokens)
 					md = P_SCRIPT_GET_EQUALS;
 				else if (str_cmp_cstr(tmp_name -> dat_str[0],"if"))
 				{
-					
-					
 					if (	ifstate->if_level == -1 ||
 							if_get_last_mode(ifstate) == IF_IN_BRANCH ||
 							if_get_last_mode(ifstate) == IF_IN_ELSEBRANCH)
 					{
 						add_if(ifstate, IF_GET_REG);
+						
+						printf("if: %d\n",ifstate->if_level);
 						
 						md = P_SCRIPT_GET_IF_REG;
 						dostmnt = 0;
@@ -612,6 +644,8 @@ struct obj_dat parse_main(struct token *tokens)
 			}
 			else if ( token_if_sym(tmp_tok, "}") )
 			{
+				printf("}: %d\n",ifstate->if_level);
+				/* FIXME*/
 				if (ifstate->if_level == -1)
 				{
 					obj_jmp_add_label_idx(dat.last, stype);
@@ -623,6 +657,7 @@ struct obj_dat parse_main(struct token *tokens)
 				else if (	if_get_last_mode(ifstate) == IF_IN_BRANCH ||
 							if_get_last_mode(ifstate) == IF_IN_ELSEBRANCH )
 				{
+					printf("1\n");
 					/* jump out of branch to end of conditional block. */
 					obj_add_jmp(&dat,
 						create_jmp_label(
@@ -647,6 +682,7 @@ struct obj_dat parse_main(struct token *tokens)
 				}
 				else if (if_get_last_mode(ifstate) == IF_OPEN)
 				{
+					printf("2\n");
 					/* close conditional block, and a branch underneath if it
 					 * exists.
 					 */
@@ -659,8 +695,12 @@ struct obj_dat parse_main(struct token *tokens)
 						
 					ifdat_pop(ifstate);
 					
+					printf("> %d\n", ifstate->if_level);
+					
 					if (ifstate->if_level >= 0)
 					{
+						
+						
 						/* jump out of branch to end of conditional block. */
 						obj_add_jmp(&dat,
 							create_jmp_label(
@@ -736,6 +776,8 @@ struct obj_dat parse_main(struct token *tokens)
 						stype);
 					
 					if_set_last_mode(ifstate, IF_IN_BRANCH);
+					
+					printf("get_if: %d = %d ?\n", IF_IN_BRANCH, if_get_last_mode(ifstate));
 					
 					md = P_SCRIPT_GET_IF_BRANCH_OPEN;
 					
@@ -858,6 +900,8 @@ struct obj_dat parse_main(struct token *tokens)
 				tmpfunc->ret = create_idnt_reg(
 					parse_ret_reg(tmp_name->dat_str[0])
 						);
+				
+				md = P_SCRIPT_GET_FNAME;
 			}
 			else
 				vm_err(	tmp_tok->fn,tmp_tok->line,tmp_tok->col,
@@ -941,7 +985,7 @@ struct obj_dat parse_main(struct token *tokens)
 		case P_SCRIPT_GET_SEMICOLON:
 			if (token_if_sym(tmp_tok, ";"))
 			{
-				if (ifstate->if_level >= 0 ||
+				if (ifstate->if_level >= 0 &&
 						if_get_last_mode(ifstate) == IF_IN_BRANCH_ONELINE)
 				{
 					/* close branch */
@@ -958,13 +1002,13 @@ struct obj_dat parse_main(struct token *tokens)
 						create_jmp_label(
 							if_get_last_id(ifstate),
 							if_get_last_bcntr(ifstate),
-							0 ),
+							1 ),
 						stype);
 					
 					if_set_last_mode(ifstate, IF_OPEN);
 					
 				}
-				else if (ifstate->if_level >= 0 ||
+				else if (ifstate->if_level >= 0 &&
 					if_get_last_mode(ifstate) == IF_IN_ELSEBRANCH_ONELINE)
 				{
 					/* close cond. block */
@@ -972,7 +1016,7 @@ struct obj_dat parse_main(struct token *tokens)
 						create_jmp_label(
 							if_get_last_id(ifstate),
 							-1,
-							0 ),
+							1 ),
 						stype);
 					
 					ifdat_pop(ifstate);
@@ -1005,7 +1049,12 @@ struct obj_dat parse_main(struct token *tokens)
 		vm_err(	tmp_tok->fn,tmp_tok->line,tmp_tok->col,
 			"unexpected EOF.");
 	
-	
+	/* FIXME: make sure jmp/ifjmp references idx to label AND pointer to label.
+	 * make sure functions all reference the next in a chain.
+	 */
+	/* FIXME: 
+	 * 
+	 */
 	obj_do_each(&dat);
 	
 	
