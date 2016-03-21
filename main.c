@@ -11,7 +11,7 @@
 #include "rpg_vm_proc.h"
 
 
-int main(void)
+int main(int argc, char *argv[])
 {
 	struct str *fn = create_str();
 	struct token tokens;
@@ -19,8 +19,10 @@ int main(void)
 	struct asub_dat *asdat;
 	struct var **regs;
 	
-	
-	str_append_cstr(fn, "test");
+	if (argc > 1)
+		str_append_cstr(fn, argv[1]);
+	else
+		str_append_cstr(fn, "test");
 	
 	token_init(&tokens);
 	
@@ -32,9 +34,8 @@ int main(void)
 	
 	odat = parse_main(&tokens);
 	
-	print_objs(&odat);
-	
-	printf("running...\n");
+	/*print_objs(&odat);
+	printf("running...\n");*/
 	
 	asdat = new_asub_dat();
 	
@@ -42,8 +43,7 @@ int main(void)
 	
 	regs = init_regs();
 	
-	vm_proc_step(asdat->first, &odat, regs);
-	vm_proc_step(asdat->first, &odat, regs);
+	vm_proc_full(asdat, &odat, regs);
 	
 	return 0;
 	

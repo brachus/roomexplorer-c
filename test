@@ -15,6 +15,7 @@ game main
 	{
 		tmp.a = set([123,'hello,world',[]]);
 		println(tmp.a);
+		println('success!');
 	}
 }
 

@@ -193,8 +193,43 @@ void add_asub_i(struct asub_dat *in, struct obj *obj_in)
 	in->last->ob = obj_in;
 	in->last->pc = obj_in->init;
 	in->last->next = 0;
+	in->last->timer = 0;
 	
 };
+
+void rm_asub_i(struct asub_dat *in, struct asub_i *s)
+{
+	struct asub_i *tmp = 0;
+	struct asub_i *prev = 0;
+	
+	tmp = in->first;
+	
+	while (tmp!=0)
+	{
+		if (tmp == s)
+		{
+			if (!prev)
+				in->first = tmp->next;
+			else
+				prev->next = tmp->next;
+			free(tmp);
+			break;
+		}
+			
+		prev = tmp;
+		tmp = tmp->next;
+	}
+	
+	tmp = in->first;
+	while (tmp!=0)
+	{
+		if (!tmp->next)
+			in->last;
+		tmp = tmp->next;
+	}
+	
+	return;
+}
 
 
 void add_asub_main(struct asub_dat *in, struct obj_dat *objd_in)
@@ -323,4 +358,48 @@ int vm_proc_step(struct asub_i *in, struct obj_dat *odat, struct var **regs)
 	
   fail:
 	vm_err(0,0,0, "unrecognized function.");
+}
+
+
+
+void vm_proc_full(struct asub_dat *in, struct obj_dat *odat, struct var **regs)
+{
+	struct asub_i *stmp, *prev;
+	int step, rval;
+	
+	stmp = in->first;
+	
+	while (stmp != 0)
+	{
+		step = 1;
+		while (step)
+		{
+			if (stmp->timer > 0)
+			{
+				stmp->timer--;
+				step = 0;
+			}
+			else
+			{
+				rval = vm_proc_step(stmp, odat, regs);
+				
+				switch(rval)
+				{
+				case PR_TERM:
+					rm_asub_i(in, stmp);
+					stmp = prev;
+					step = 0;
+					break;
+				case PR_TERMVM:
+					return;
+				case PR_NEXTSUB:
+					step = 0;
+					break;
+				}
+			}
+		}
+		
+		prev = stmp;
+		stmp = stmp->next;
+	}
 }
