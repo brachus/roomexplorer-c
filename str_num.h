@@ -27,6 +27,8 @@ struct str new_str(char *in);
 struct str *create_str();
 void str_append_char(struct str* in_str, char in);
 void str_append_cstr(struct str* in_str, char *in);
+void str_append_int(struct str* tstr, int tint);
+void str_append_float(struct str* tstr, float tfloat);
 void str_print(struct str* in);
 char str_idx(struct str* in, int idx);
 char *str_to_cstr(struct str* in);

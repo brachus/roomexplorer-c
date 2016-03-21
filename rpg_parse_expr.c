@@ -96,6 +96,7 @@ struct var *parse_literal_expr(struct token *tokens)
 				nvar->type = V_FLOAT;
 				nvar->dat_float = tmp->dat_float;
 				md = P_EOF;
+				break;
 			case T_NAME:
 				nvar = new_var();
 				nvar->type = V_NAME;

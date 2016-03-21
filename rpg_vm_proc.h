@@ -20,6 +20,15 @@ struct asub_dat
 };
 
 
+struct var *get_var_from_varstr_obj(struct obj *otmp, struct str *vname);
+struct str *get_str_from_arg(struct idnt *arg, struct var **regs);
+int get_int_from_arg(struct idnt *arg, struct var **regs);
+float get_float_from_arg(struct idnt *arg, struct var **regs);
+struct obj *get_objpntr_from_arg(struct idnt *arg);
+struct var *get_var_from_arg(struct idnt *arg, struct var **regs);
+int get_nargs(struct idnt *args);
+struct var **init_regs();
 struct asub_dat *new_asub_dat();
 void add_asub_i(struct asub_dat *in, struct obj *obj_in);
 void add_asub_main(struct asub_dat *in, struct obj_dat *objd_in);
+int vm_proc_step(struct asub_i *in, struct obj_dat *odat, struct var **regs);

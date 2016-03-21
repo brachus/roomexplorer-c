@@ -17,6 +17,7 @@ int main(void)
 	struct token tokens;
 	struct obj_dat odat;
 	struct asub_dat *asdat;
+	struct var **regs;
 	
 	
 	str_append_cstr(fn, "test");
@@ -31,7 +32,6 @@ int main(void)
 	
 	odat = parse_main(&tokens);
 	
-	
 	print_objs(&odat);
 	
 	printf("running...\n");
@@ -40,6 +40,10 @@ int main(void)
 	
 	add_asub_main(asdat, &odat);
 	
+	regs = init_regs();
+	
+	vm_proc_step(asdat->first, &odat, regs);
+	vm_proc_step(asdat->first, &odat, regs);
 	
 	return 0;
 	

@@ -1,16 +1,20 @@
 
+g tmp
+{
+	.a = 'hello, world';
+}
 
 game main
 {
-	.apple = 1;
+	.apple = 123.123;
 	.orange = "string";
 	.tmpname = orange;
-	.tmpvarn = orange.y;
 	
 	
 	init
 	{
-		println('hello, world');
+		tmp.a = set([123,'hello,world',[]]);
+		println(tmp.a);
 	}
 }
 

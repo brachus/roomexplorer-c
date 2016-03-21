@@ -73,14 +73,39 @@ void str_append_cstr(struct str* in_str, char *in)
 		str_append_char(in_str, in[i]);
 }
 
+void str_append_int(struct str* tstr, int tint)
+{
+	char *c = malloc(32);
+	
+	sprintf(c, "%d", tint);
+	
+	str_append_cstr(tstr, c);
+	
+	free(c);
+}
+
+void str_append_float(struct str* tstr, float tfloat)
+{
+	char *c = malloc(32);
+	
+	sprintf(c, "%f", tfloat);
+	
+	str_append_cstr(tstr, c);
+	
+	free(c);
+}
+
 void str_print(struct str* in)
 {
-	struct str_l *tmp = in->first;
+	if (!in)
+		return;
 	
-	while (tmp != NULL)
+	struct str_l *c = in->first;
+	
+	while (c != 0)
 	{
-		printf("%c",tmp->dat);
-		tmp = tmp->next;
+		printf("%c", c->dat);
+		c = c->next;
 	}
 		
 }
@@ -139,6 +164,8 @@ void str_del(struct str *in)
 
 void free_str(struct str *in)
 {
+	if (!in)
+		return;
 	str_del(in);
 	free(in);
 }
@@ -195,10 +222,13 @@ int str_cmp_cstr(struct str *a, char *b)
 
 struct str *str_cpy(struct str *in)
 {
+	if (!in) /* ? */
+		return 0;
+		
 	struct str *cpy = create_str();
 	struct str_l *tmp = in->first;
 	
-	while (tmp != NULL)
+	while (tmp != 0)
 	{
 		str_append_char(cpy, tmp->dat);
 		tmp = tmp->next;

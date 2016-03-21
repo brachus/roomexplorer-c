@@ -266,7 +266,11 @@ void obj_jmp_add_label_idx(struct obj *in, int stype)
 void idnt_fill_idxs(struct obj_dat *odat, struct idnt *in)
 {
 	if (in->type == IDNT_OBJVAR || in->type == IDNT_OBJ)
+	{
 		in->idx = get_obj_idx(odat, in->obj_name);
+		in->ob =  get_obj_pntr(odat, in->obj_name);
+	}
+		
 				
 	if (in->next != 0)
 		idnt_fill_idxs(odat, in->next);
@@ -425,10 +429,7 @@ struct obj_dat parse_main(struct token *tokens)
 	tmp_tok = tokens->first;
 	
 	while (tmp_tok != NULL)
-	{
-		
-		printf(" md: %d\n",md);
-		
+	{		
 		switch (md)
 		{
 		case P_OPEN:
@@ -644,7 +645,6 @@ struct obj_dat parse_main(struct token *tokens)
 			}
 			else if ( token_if_sym(tmp_tok, "}") )
 			{
-				printf("}: %d\n",ifstate->if_level);
 				/* FIXME*/
 				if (ifstate->if_level == -1)
 				{
@@ -682,7 +682,6 @@ struct obj_dat parse_main(struct token *tokens)
 				}
 				else if (if_get_last_mode(ifstate) == IF_OPEN)
 				{
-					printf("2\n");
 					/* close conditional block, and a branch underneath if it
 					 * exists.
 					 */
@@ -694,9 +693,7 @@ struct obj_dat parse_main(struct token *tokens)
 						stype);
 						
 					ifdat_pop(ifstate);
-					
-					printf("> %d\n", ifstate->if_level);
-					
+										
 					if (ifstate->if_level >= 0)
 					{
 						
@@ -777,7 +774,7 @@ struct obj_dat parse_main(struct token *tokens)
 					
 					if_set_last_mode(ifstate, IF_IN_BRANCH);
 					
-					printf("get_if: %d = %d ?\n", IF_IN_BRANCH, if_get_last_mode(ifstate));
+					/*printf("get_if: %d = %d ?\n", IF_IN_BRANCH, if_get_last_mode(ifstate));*/
 					
 					md = P_SCRIPT_GET_IF_BRANCH_OPEN;
 					
@@ -958,7 +955,20 @@ struct obj_dat parse_main(struct token *tokens)
 				if ( token_if_sym(tmp_tok, ",") || token_if_sym(tmp_tok, ")") )
 				{
 					if (l_expr.first != 0)
+					{
 						func_add_arg(tmpfunc, parse_lexpr_idnt(&l_expr));
+						
+						
+						/* ".xxx" --> "curobj.xxx" */
+						if (tmpfunc->args->last->obj_name != 0 &&
+							tmpfunc->args->last->obj_name->length == 0)
+						{
+							free_str(tmpfunc->args->last->obj_name);
+							tmpfunc->args->last->obj_name =
+								str_cpy(dat.last->name);
+						}
+							
+					}
 					
 					free_tokens(&l_expr);
 					

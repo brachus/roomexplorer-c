@@ -65,6 +65,5 @@ enum
 enum
 {
 	O_NONE,
-	O_GAME,
-	
+	O_GAME
 };

@@ -18,9 +18,6 @@
 #define F_UNKNOWN -2
 #define F_LABEL	-1
 
-
-
-
 #define S_INIT	1
 #define S_BODY	2
 #define S_TERM	4
@@ -71,8 +68,9 @@ struct idnt
 	/* register number OR obj_idx */
 	int idx;
 	
-	/* object name (in case of run-tine obj creation) */
+	/* object name (in case of run-time obj creation) */
 	struct str *obj_name;
+	struct obj *ob;
 	
 	/* var name (goes with obj idx) */
 	struct str *var_name;
@@ -137,6 +135,8 @@ int var_search_str(struct var *vars, struct str *find);
 void var_add_str(struct var *vars, struct str *add);
 void add_var(struct var *vars, struct var *addme);
 void add_new_var(struct var *vars);
+void var_inplace_cpy(struct var *cpyme, struct var *istay);
+struct var *var_cpy(struct var *v);
 void print_var_val(struct var *in);
 void print_var(struct var *in, char *pad);
 void idnt_init(struct idnt *in);

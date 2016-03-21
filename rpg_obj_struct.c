@@ -49,28 +49,31 @@ struct var *new_var(void)
 
 void free_var(struct var *in)
 {
-	if (in->name != NULL)
+	if (!in)
+		return;
+	
+	if (in->name != 0)
 		free_str(in->name);
 	
-	if (in->dat_str != NULL)
+	if (in->dat_str != 0)
 		free_str(in->dat_str);
 	
-	if (in->dat_str_1 != NULL)
+	if (in->dat_str_1 != 0)
 		free_str(in->dat_str_1);
 		
-	if (in->dat_str_2 != NULL)
+	if (in->dat_str_2 != 0)
 		free_str(in->dat_str_2);
 	
-	if (in->dat_list != NULL)
+	if (in->dat_list != 0)
 		free_var(in->dat_list);
 	
-	if (in->list_next != NULL)
+	if (in->list_next != 0)
 		free_var(in->list_next);
 	
-	if (in->next != NULL)
+	if (in->next != 0)
 	{
 		free_var(in->next);
-		in->last = NULL;
+		in->last = 0;
 	}
 	
 	free(in);
@@ -118,8 +121,62 @@ void add_new_var(struct var *vars)
 	vars->last = vars->last->next;
 }
 
+
+void var_inplace_cpy(struct var *cpyme, struct var *istay)
+{
+	/* knock out value, replace it with some other value,
+	 * keep links and name.
+	 */
+	free_str(istay->dat_str);
+	free_str(istay->dat_str_1);
+	free_str(istay->dat_str_2);
+	free_var(istay->dat_list);
+	free_var(istay->list_next);
+	istay->dat_list = 0;
+	istay->list_next = 0;
+	
+	istay->type = cpyme->type;
+	istay->dat_str = str_cpy(cpyme->dat_str);
+	istay->dat_str_1 = str_cpy(cpyme->dat_str_1);
+	istay->dat_str_2 = str_cpy(cpyme->dat_str_2);
+	istay->dat_int = cpyme->dat_int;
+	istay->dat_float = cpyme->dat_float;
+	if (cpyme->dat_list != 0)
+		istay->dat_list = var_cpy(cpyme->dat_list);
+	if (cpyme->list_next != 0)
+		istay->list_next = var_cpy(cpyme->list_next);
+}
+
+struct var *var_cpy(struct var *v)
+{
+	struct var *cpy = new_var();
+	
+	cpy->type = v->type;
+	cpy->name = str_cpy(v->name);
+	
+	cpy->dat_str = str_cpy(v->dat_str);
+	cpy->dat_str_1 = str_cpy(v->dat_str_1);
+	cpy->dat_str_2 = str_cpy(v->dat_str_2);
+	
+	cpy->dat_int = v->dat_int;
+	cpy->dat_float = v->dat_float;
+	
+	if (v->dat_list != 0)
+		cpy->dat_list = var_cpy(v->dat_list);
+	if (v->list_next != 0)
+	cpy->list_next = var_cpy(v->list_next);
+	
+	return cpy;
+};
+
 void print_var_val(struct var *in)
 {
+	if (!in)
+	{
+		printf("null");
+		return;
+	}	
+		
 	switch(in->type)
 	{
 	case V_INT:
@@ -195,12 +252,15 @@ void print_var(struct var *in, char *pad)
 		print_var(in->next, pad);
 }
 
+
 void idnt_init(struct idnt *in)
 {
 	in->type = IDNT_NULL;
 	in->idx = -1;
 	
 	in->obj_name = 0;
+	in->ob = 0;
+	
 	in->var_name = 0;
 	
 	in->use_var = 0;
