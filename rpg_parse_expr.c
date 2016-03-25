@@ -135,12 +135,32 @@ struct var *parse_literal_expr(struct token *tokens)
 				}
 				else if ( str_cmp_cstr(tmp->dat_str[0],"{") )
 					md = P_OPEN_MEDIA;
+				else if ( str_cmp_cstr(tmp->dat_str[0],"-") )
+					md = P_NEG_GET_INT_FLOAT;
 				else
 					vm_err(tmp->fn, tmp->line, tmp->col, "unexpected token.");
 				break;
 			default:
 				break;
 			}
+			break;
+		case P_NEG_GET_INT_FLOAT:
+			if (tmp->type == T_INT)
+			{
+				nvar = new_var();
+				nvar->type = V_INT;
+				nvar->dat_int = -(tmp->dat_int);
+				md = P_EOF;
+			}
+			else if (tmp->type == T_FLOAT)
+			{
+				nvar = new_var();
+				nvar->type = V_INT;
+				nvar->dat_int = -(tmp->dat_int);
+				md = P_EOF;
+			}
+			else
+				vm_err(tmp->fn, tmp->line, tmp->col, "expected numeral.");
 			break;
 		case P_ARRAY_GET_ITEM:
 			if (tmp->type == T_FLOAT || tmp->type == T_INT || tmp->type == T_STR)
@@ -184,15 +204,14 @@ struct var *parse_literal_expr(struct token *tokens)
 			case T_SYM:
 				if ( str_cmp_cstr(tmp->dat_str[0],"]") )
 				{
-					
 					/* step down list level */
-					map[map_lvl] = NULL;
+					map[map_lvl] = 0;
 					map_lvl--;
 					
-					if (map_lvl == 0)
+					if (!map_lvl)
 						md = P_EOF;
-					
-					md = P_ARRAY_GET_SYM;
+					else
+						md = P_ARRAY_GET_SYM;
 				}
 				else if ( str_cmp_cstr(tmp->dat_str[0],"[") )
 				{
@@ -223,6 +242,7 @@ struct var *parse_literal_expr(struct token *tokens)
 			
 			break;
 		case P_ARRAY_GET_SYM:
+			
 			if (tmp->type == T_SYM)
 			{
 				if ( str_cmp_cstr(tmp->dat_str[0],"]") )

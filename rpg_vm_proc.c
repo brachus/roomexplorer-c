@@ -92,6 +92,8 @@ struct var *get_var_from_varstr_obj(struct obj *otmp, struct str *vname)
 	return 0;
 };
 
+
+
 struct str *get_str_from_arg(struct idnt *arg, struct var **regs)
 {
 	struct var *vtmp = get_var_from_arg(arg, regs);
@@ -252,6 +254,8 @@ void rm_asub_i(struct asub_dat *in, struct asub_i *s)
 		tmp = tmp->next;
 	}
 	
+	in->last = 0;
+	
 	tmp = in->first;
 	while (tmp!=0)
 	{
@@ -400,7 +404,57 @@ int do_int_cmp(int cmp_op, int a, int b)
 	return 0;
 }
 
+struct obj *get_obj_matching_type(struct obj_dat *in, int itype)
+{
+	struct obj *otmp = in->first;
+	
+	while (otmp != 0)
+	{
+		if (itype == otmp->itype)
+			return otmp;
+			
+		otmp = otmp->next;
+	}
+	
+	return 0;
+};
 
+void fill_obj_defs(struct obj *dst, struct obj *def)
+{
+	struct var *dvtmp = def->vars;
+	
+	while (dvtmp != 0)
+	{
+		/* if var with same name isnt found in dst, copy it from def */
+		if (!get_var_from_varstr_obj(dst, dvtmp->name))
+		{
+			obj_add_new_var(dst);
+			dst->vars->last->name = str_cpy(dvtmp->name);
+			var_inplace_cpy(dvtmp, dst->vars->last);
+		}
+		
+		dvtmp = dvtmp->next;
+	}
+}
+
+void obj_add_def(struct obj_dat *main, struct obj_dat *defs)
+{
+	struct obj *otmp = main->first;
+	struct obj *dtmp = 0;
+	
+	while (otmp != 0)
+	{
+		dtmp = get_obj_matching_type(defs, otmp->itype);
+		/* look for first object in defs with same type */
+		if (dtmp != 0)
+		{
+			fill_obj_defs(otmp, dtmp);
+		}
+		
+		otmp = otmp->next;
+	}
+	
+}
 
 
 int vm_proc_step(struct asub_i *in, struct obj_dat *odat, struct var **regs)
@@ -409,18 +463,14 @@ int vm_proc_step(struct asub_i *in, struct obj_dat *odat, struct var **regs)
 	int ret_val = PR_STEP;
 	int nostep = 0;
 	int ptype = O_NONE;
-	
-	
-	
 	/* make local copies of asub_i vars. */
 	int 		 tmd = in->mode;
 	struct func *tpc = in->pc;
 	struct obj  *tob = in->ob;
-	
+	/* max number of args is 16 for now. */
 	static struct var *tvars[16];
 	static struct idnt *targs[16];
 	int nargs, i;
-	
 	struct idnt *tidnt;
 	
 	
@@ -435,8 +485,6 @@ int vm_proc_step(struct asub_i *in, struct obj_dat *odat, struct var **regs)
 	struct str *tstr;
 	
 	
-	
-	
 	if (!tpc)
 		switch(tmd)
 		{
@@ -448,10 +496,10 @@ int vm_proc_step(struct asub_i *in, struct obj_dat *odat, struct var **regs)
 			in->mode = S_TERM;
 			in->pc = tob->term;
 			return PR_STEP;
-		case S_TERM: default:
+		case S_TERM:
+		default:
 			return PR_TERM;
 		}
-		
 	
 	if (tpc->id == F_LABEL)
 	{
@@ -470,10 +518,9 @@ int vm_proc_step(struct asub_i *in, struct obj_dat *odat, struct var **regs)
 	for (i=0;i<nargs;i++)
 	{
 		targs[i] = tidnt;
+		tvars[i] = get_var_from_arg(targs[i], regs);
 		tidnt = tidnt->next;
 	}
-	
-	
 	
 	switch(ptype)
 	{
@@ -487,27 +534,16 @@ int vm_proc_step(struct asub_i *in, struct obj_dat *odat, struct var **regs)
 		case F_CMP_NEQUAL:
 		case F_CMP_EQUAL:
 			doret = 1;
-			if (nargs > 0)
-			{
-				tvars[0] = get_var_from_arg(targs[0], regs);
-				tvars[1] = get_var_from_arg(targs[1], regs);
-			}
-			
 			
 			retmydat->type = V_INT;
 			
 			
 			/* ONLY INTS FOR NOW: */
 			if (tvars[0]->type == V_INT && tvars[1]->type == V_INT)
-			{
-				
 				retmydat->dat_int = do_int_cmp(
 					in->pc->id,
 					tvars[0]->dat_int,
 					tvars[1]->dat_int);
-				
-
-			}
 				
 			break;
 		case F_JMP:
@@ -515,8 +551,6 @@ int vm_proc_step(struct asub_i *in, struct obj_dat *odat, struct var **regs)
 			nostep = 1;
 			break;
 		case F_IF_JMP:
-			if (nargs > 0)
-				tvars[0] = get_var_from_arg(targs[0], regs);
 			
 			
 			if (var_get_int(tvars[0]))
@@ -530,10 +564,7 @@ int vm_proc_step(struct asub_i *in, struct obj_dat *odat, struct var **regs)
 		case F_PRINT:
 		case F_PRINTLN:
 			if (nargs > 0)
-			{
-				tvars[0] = get_var_from_arg(targs[0], regs);
 				print_var_val(tvars[0]);
-			}
 			
 			if (in->pc->id == F_PRINTLN)
 				printf("\n");
@@ -545,12 +576,8 @@ int vm_proc_step(struct asub_i *in, struct obj_dat *odat, struct var **regs)
 		case F_OP_DIV:
 		case F_OP_MOD:
 			doret = 1;
-			if (nargs == 2)
-			{
-				tvars[0] = get_var_from_arg(targs[0], regs);
-				tvars[1] = get_var_from_arg(targs[1], regs);
-			}
-			else
+			
+			if (nargs != 2)
 				vm_err(0,0,0, "wrong number of args.");
 			
 			
@@ -577,34 +604,29 @@ int vm_proc_step(struct asub_i *in, struct obj_dat *odat, struct var **regs)
 			break;
 		case F_TYPE:
 			doret = 1;
-			if (nargs == 1)
+			if (nargs == 1 && tvars[0] != 0)
 			{
-				tvars[0] = get_var_from_arg(targs[0], regs);
+				retmydat->type = V_STR;
+				free_str(retmydat->dat_str);
+				retmydat->dat_str = create_str();
 				
-				if (tvars[0] != 0)
+				switch(tvars[0]->type)
 				{
-					retmydat->type = V_STR;
-					free_str(retmydat->dat_str);
-					retmydat->dat_str = create_str();
-					
-					switch(tvars[0]->type)
-					{
-					case V_INT:
-						str_append_cstr(retmydat->dat_str, "int");
-						break;
-					case V_FLOAT:
-						str_append_cstr(retmydat->dat_str, "float");
-						break;
-					case V_STR:
-						str_append_cstr(retmydat->dat_str, "string");
-						break;
-					case V_LIST:
-						str_append_cstr(retmydat->dat_str, "list");
-						break;
-					default:
-						str_append_cstr(retmydat->dat_str, "null");
-						break;
-					}
+				case V_INT:
+					str_append_cstr(retmydat->dat_str, "int");
+					break;
+				case V_FLOAT:
+					str_append_cstr(retmydat->dat_str, "float");
+					break;
+				case V_STR:
+					str_append_cstr(retmydat->dat_str, "string");
+					break;
+				case V_LIST:
+					str_append_cstr(retmydat->dat_str, "list");
+					break;
+				default:
+					str_append_cstr(retmydat->dat_str, "null");
+					break;
 				}
 			}
 			break;
@@ -612,9 +634,31 @@ int vm_proc_step(struct asub_i *in, struct obj_dat *odat, struct var **regs)
 		case F_TERM_VM:
 			return PR_TERMVM;
 		
-		case F_TERM:
-			return PR_TERM;
 		
+		case F_TERM:
+			in->pc = tob->term;
+			in->mode = S_TERM;
+			return PR_STEP;
+			
+		case F_LOOP:
+			switch(tmd)
+			{
+			case S_INIT:
+				in->pc = tob->init;
+				break;
+			case S_BODY:
+				in->pc = tob->body;
+				break;
+			case S_TERM:
+				in->pc = tob->term;
+				break;
+			}
+			return PR_NEXTSUB;
+		
+		case F_SLEEP:
+			if (nargs == 1)
+				in->timer = tvars[0]->dat_int;
+			break;
 		
 		default:
 			vm_err(0,0,0, "unrecognized function.");
@@ -650,10 +694,12 @@ int vm_proc_step(struct asub_i *in, struct obj_dat *odat, struct var **regs)
 
 
 
-void vm_proc_full(struct asub_dat *in, struct obj_dat *odat, struct var **regs)
+int vm_proc_full(struct asub_dat *in, struct obj_dat *odat, struct var **regs)
 {
 	struct asub_i *stmp, *prev;
 	int step, rval;
+	
+	prev = 0;
 	
 	stmp = in->first;
 	
@@ -679,7 +725,7 @@ void vm_proc_full(struct asub_dat *in, struct obj_dat *odat, struct var **regs)
 					step = 0;
 					break;
 				case PR_TERMVM:
-					return;
+					return 0;
 				case PR_NEXTSUB:
 					step = 0;
 					break;
@@ -692,6 +738,10 @@ void vm_proc_full(struct asub_dat *in, struct obj_dat *odat, struct var **regs)
 			
 		prev = stmp;
 		stmp = stmp->next;
-		
 	}
+	
+	if (!in->first)
+		return 0;
+	
+	return 1;
 }

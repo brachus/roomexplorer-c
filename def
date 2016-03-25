@@ -1,0 +1,103 @@
+
+/* default "filled-in" predefs are defined here: */
+
+game _
+{
+	.bg_color = [0,0,0];  /* base colors for when nothing is rendered*/
+	.fg_color=[255,255,255];
+
+	.fad_color=[0,0,0]; /* used for fade effect */
+	.fad_opacity=0;
+	
+	.cam_pos=[0,0];   /* camera vars */
+	.cam_scale=1.0;
+	
+	/* if not -1, camera focuses on actor,
+	 * keeping it at the center of screen.
+	 */
+	.cam_actor=-1;
+										
+	.cam_bounds=[-1,-1,-1,-1];
+	
+	/*  any tilemaps or actors in these lists are rendered.*/
+	.active_tmaps=[];
+	/* no "renderable" vars necessary. */
+	.active_actors=[];
+	
+	/*
+	 * if win_grab == 1, all user input
+	 * is grabbed by active windows
+	 */
+	.win_grab=0;
+	/* list of active windows.
+	 * last index in list is the focused window.
+	 */
+	.win_list=[];
+	
+	
+	/* modulators: */
+	/* for each frame, mod *= -1.  **only touched by vm.** */
+	.mod=1;
+	
+	/* counts up to 3 and loops back to 0.
+	 * increments by 1 every frame.
+	 */
+	.mod_4=0;
+	
+	/* compare to mod_4 */
+	.mod_8=0;
+	.mod_16=0;
+	.mod_32=0; 
+	
+	/* per frame delay for text-type effect
+	 * for message windows
+	 */
+	.win_text_delay=1;
+	
+	/* idx to tilemap which performs movement
+	 * clipping against objects.
+	 */
+	.clip_tmap=-1;
+	
+	/* tilemap / sprite layer opacities. */
+	.tmap_layer_opacity=[255,255,255,255,255,255,255,255];
+	.sprt_layer_opacity=[255,255,255,255,255,255,255,255];
+	
+	/* blend modes per layer */
+	.tmap_layer_blend=
+		["norm","norm","norm","norm","norm","norm","norm","norm"];
+	
+	/* available modes: norm, mult, ovrly */    
+	.sprt_layer_blend=
+		["norm","norm","norm","norm","norm","norm","norm","norm"];
+	
+	
+	.tmap_layer_maskmode=
+		["none","none","none","none","none","none","none","none"];
+				/*  ("none") | ( ("t"|"s")*/
+				
+	.sprt_layer_maskmode=
+		["none","none","none","none","none","none","none","none"];
+		/*	+ ("rgba_mul" | "per sprite") ) */
+		
+	
+	.tmap_layer_mask_layer=[-1,-1,-1,-1,-1,-1,-1,-1];
+	.sprt_layer_mask_layer=[-1,-1,-1,-1,-1,-1,-1,-1];
+	
+	.key_active=1; /* input is enabled */	
+	
+	/*audio settings: */
+	.audio_reverb_gain=0.0;
+	/* reverb gain (0.0 - 1.0)).  wet/dry are controlled by vm_audio 
+	 * automagically.
+	 */
+	
+	.audio_compressor_gain=0.0;
+	/* dynamics compressor gain (0.0 - 1.0). like reverb, web/dry is han-
+	 * deled automatically.
+	 */
+	
+	 .audio_lowpass_gain=0.0;
+	 
+	 .audio_master_gain=1.0;
+}

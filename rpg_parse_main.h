@@ -88,3 +88,4 @@ int get_obj_idx(struct obj_dat *in, struct str *obj_str);
 struct obj *get_obj_pntr(struct obj_dat *in, struct str *obj_str);
 void obj_do_itype(struct obj *in);
 struct obj_dat parse_main(struct token *tokens);
+

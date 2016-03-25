@@ -2,30 +2,10 @@
 
 game main
 {
-	.a=1;
-
+	
 	init
 	{
-	
-		r1 = set(1);
-		loop:
-		r1 = op_add(r1, 1);
-		r0 = cmp_equal(r1, 3000000);
-		if_jmp(r0, exit);
-		jmp(loop);
-		exit:
-		println('done! (register)');
-		
-		loop2:
-		.a = op_add(.a, 1);
-		r0 = cmp_equal(.a, 3000000);
-		if_jmp(r0, exit2);
-		jmp(loop2);
-		exit2:
-		println('done! (var)');
-		
-		println('killing vm...');
-		term_vm();
+		println(.tmap_layer_opacity);
 	}
 }
 
