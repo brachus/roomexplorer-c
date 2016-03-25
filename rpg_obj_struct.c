@@ -26,6 +26,8 @@ void var_init(struct var *in)
 	in->dat_str_1 = 0;
 	in->dat_str_2 = 0;
 	
+	in->ob = 0;
+	
 	in->dat_int = 0;
 	in->dat_float = 0;
 	
@@ -158,6 +160,8 @@ struct var *var_cpy(struct var *v)
 	cpy->dat_str_1 = str_cpy(v->dat_str_1);
 	cpy->dat_str_2 = str_cpy(v->dat_str_2);
 	
+	cpy->ob = v->ob;
+	
 	cpy->dat_int = v->dat_int;
 	cpy->dat_float = v->dat_float;
 	
@@ -186,9 +190,9 @@ void print_var_val(struct var *in)
 		printf("%f", in->dat_float);
 		break;
 	case V_STR:
-		printf("\"");
+		/*printf("\"");*/
 		str_print(in->dat_str);
-		printf("\"");
+		/*printf("\"");*/
 		break;
 	case V_NAME:
 		str_print(in->dat_str);
@@ -203,7 +207,7 @@ void print_var_val(struct var *in)
 			str_print(in->dat_str_2);
 		}
 			
-		printf("  (%d)", in->dat_int);
+		printf("  (%d)", in->ob);
 		break;
 	case V_LIST:
 		printf("[");
@@ -358,6 +362,7 @@ void func_init(struct func *in)
 	in->args = 0;
 	in->next = 0;
 	in->last = 0;
+	in->lbl = 0;
 	
 }
 
@@ -653,16 +658,22 @@ static char *funcnames[] =
 	"stopsnd",
 	"stopall",
 	"additem",
-	"dropitem"
+	"dropitem",
+	"print",
+	"type"
 };
 
 /* match an input str with an entry in global funcnames */
 int get_funcname_id(struct str *in)
 {
+	
 	int i = 0;
 	for (i=0;i<NFUNCNAMES;i++)
+	{
 		if (str_cmp_cstr(in, funcnames[i]))
 			return i;
+	}
+		
 	return F_UNKNOWN;
 }
 
@@ -672,3 +683,29 @@ char *get_funcname(int id)
 		return funcnames[id];
 	return 0;
 }
+
+/* supports only int, float, or str types for now. */
+void str_append_var(struct str *in, struct var *vin)
+{
+	if (!in || !vin)
+		return;
+		
+	switch (vin->type)
+	{
+	case V_INT:
+		str_append_int(in, vin->dat_int);
+		return;
+	case V_FLOAT:
+		str_append_float(in, vin->dat_float);
+		return;
+	case V_STR:
+		str_append_str(in, vin->dat_str);
+	}
+	
+	return;
+}
+
+
+
+
+

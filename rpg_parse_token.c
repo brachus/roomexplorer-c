@@ -368,8 +368,12 @@ void parse_tokenize(struct str *fn, struct token* tokens)
 			{
 				tokens->last->type = T_NAME;
 				
-				 /* for ".xx", have first string be only a null character*/
-				tokens->last->dat_str[0]->first->dat = '\0';
+				 /* for ".xx", have string len == 0*/
+				free(tokens->last->dat_str[0]->first);
+				tokens->last->dat_str[0]->first = 0;
+				tokens->last->dat_str[0]->last = 0;
+				
+				tokens->last->dat_str[0]->length = 0;
 				
 				tok_item_idx++;
 				

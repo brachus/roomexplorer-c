@@ -59,6 +59,7 @@ struct ifdat
 	int if_level;
 };
 
+struct func *get_label_pntr(struct func *fns, struct str *lname);
 int match_sname(struct str *in);
 struct ifdat *new_ifdat();
 struct ifdat_l *new_ifdat_l();

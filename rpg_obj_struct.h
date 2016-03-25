@@ -35,6 +35,8 @@ struct var
 	struct str 	*dat_str_1; /* for names.*/
 	struct str 	*dat_str_2;
 	
+	struct obj *ob; /* */
+	
 	int			dat_int; /* if var of type name, the will be obj idx of first name */
 	float		dat_float;
 	
@@ -89,6 +91,7 @@ struct func
 	/* for labels (id=-1), OR jmp functions: */
 	int label;
 	struct str *label_name; /* if id=F_UNKNOWN, this becomes function name string. */
+	struct func *lbl; /* pointer to label */
 	
 	/* idx to object (as opperand).  may be NO_OPP if no opperand obj */
 	int obj_idx;
@@ -160,3 +163,4 @@ void obj_add_func(struct obj *in, struct func *addme, int stype);
 void print_objs(struct obj_dat *in);
 int get_funcname_id(struct str *in);
 char *get_funcname(int id);
+void str_append_var(struct str *in, struct var *vin);

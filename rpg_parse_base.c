@@ -76,7 +76,11 @@ int parse_ret_reg( struct str *in )
 {
 	if (in->length == 2 )
 		if ( str_idx(in,0) == 'r' && is_numeral(str_idx(in,1)) )
+		{
+			/*printf("r: %c %d ?\n",str_idx(in,1), chtoi(str_idx(in,1)));*/
 			return chtoi(str_idx(in,1));
+		}
+			
 	return -1;
 };
 

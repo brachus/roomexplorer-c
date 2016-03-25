@@ -10,6 +10,17 @@
 #include "rpg_func_def.h"
 
 
+struct func *get_label_pntr(struct func *fns, struct str *lname)
+{
+	while (fns != 0)
+	{
+		if (fns->id == F_LABEL && fns->label_name != 0)
+			if (str_cmp(lname,fns->label_name))
+				return fns;
+		fns = fns->next;
+	}
+	return 0;
+};
 
 int match_sname(struct str *in)
 {
@@ -246,18 +257,48 @@ int obj_find_label(struct obj *in, struct str *findme, int stype)
 void obj_jmp_add_label_idx(struct obj *in, int stype)
 {
 	struct func *tmp;
+	struct func *strt;
 	
 	if (stype == S_INIT)
-		tmp = in->init;
+		strt = in->init;
 	else if (stype == S_BODY)
-		tmp = in->body;
+		strt = in->body;
 	else if (stype == S_TERM)
-		tmp = in->term;
+		strt = in->term;
+		
+	tmp = strt;
 	
 	while (tmp != 0)
 	{
 		if (tmp->id == F_JMP || tmp->id == F_IF_JMP)
-			tmp->label = obj_find_label(in, tmp->label_name, stype);
+		{
+			if (tmp->label_name != 0)
+			{
+				tmp->label = obj_find_label(in, tmp->label_name, stype);
+				tmp->lbl = get_label_pntr(strt, tmp->label_name);
+			}
+			else if (	tmp->id == F_JMP && 
+						tmp->args != 0 && 
+						tmp->args->type == IDNT_OBJ &&
+						tmp->args->obj_name != 0)
+			{
+				
+				tmp->lbl = get_label_pntr(strt, tmp->args->obj_name);
+			}
+			else if (	tmp->id == F_IF_JMP && 
+						tmp->args != 0)
+				{
+					if (
+							tmp->args->next != 0 && 
+							tmp->args->next->type == IDNT_OBJ &&
+							tmp->args->next->obj_name != 0)
+						tmp->lbl = get_label_pntr(strt, tmp->args->next->obj_name);
+				}
+		else
+			vm_err(0,0,0, "invalid arguments for jmp/if_jmp.");
+		}
+		
+			
 		
 		tmp = tmp->next;
 	}
@@ -270,11 +311,15 @@ void idnt_fill_idxs(struct obj_dat *odat, struct idnt *in)
 		in->idx = get_obj_idx(odat, in->obj_name);
 		in->ob =  get_obj_pntr(odat, in->obj_name);
 	}
-		
+	
+	
+	var_fill_idxs(odat, in->use_var);
 				
 	if (in->next != 0)
 		idnt_fill_idxs(odat, in->next);
 }
+
+
 
 void func_fill_idxs(struct obj_dat *odat, struct func *in)
 {
@@ -283,7 +328,7 @@ void func_fill_idxs(struct obj_dat *odat, struct func *in)
 		in->obj_idx = get_obj_idx(odat, in->obj_name);
 		in->ob = get_obj_pntr(odat, in->obj_name);
 	}
-		
+	
 	
 	if (in->ret != 0)
 		idnt_fill_idxs(odat, in->ret);
@@ -304,10 +349,14 @@ void func_fill_idxs(struct obj_dat *odat, struct func *in)
  */
 void var_fill_idxs(struct obj_dat *odat, struct var *in)
 {
+	if (!in)
+		return;
 	
 	if (in->type == V_NAME)
+	{
 		in->dat_int = get_obj_idx(odat, in->dat_str);
-		
+		in->ob = get_obj_pntr(odat, in->dat_str);
+	}
 	else if (in->type == V_LIST && in->dat_list != 0)
 		var_fill_idxs(odat, in->dat_list);
 	
@@ -369,6 +418,7 @@ struct obj *get_obj_pntr(struct obj_dat *in, struct str *obj_str)
 {
 	struct obj *tmp = in->first;
 	
+	
 	if (!obj_str)
 		return 0;
 	
@@ -428,7 +478,7 @@ struct obj_dat parse_main(struct token *tokens)
 	
 	tmp_tok = tokens->first;
 	
-	while (tmp_tok != NULL)
+	while (tmp_tok != 0)
 	{		
 		switch (md)
 		{
@@ -571,11 +621,14 @@ struct obj_dat parse_main(struct token *tokens)
 		case P_SCRIPT_OPEN:
 			dostmnt = 0;
 			
+			
+						
 			if (tmp_tok->type == T_NAME && token_nnames(tmp_tok) == 2)
 			{
 				free_token_l(tmp_name);
 				tmp_name = cpy_token(tmp_tok);
 				
+				/* if .xxx */
 				if (tmp_name->dat_str[0]->length == 0)
 				{
 					free_str(tmp_name->dat_str[0]);
@@ -604,7 +657,6 @@ struct obj_dat parse_main(struct token *tokens)
 					{
 						add_if(ifstate, IF_GET_REG);
 						
-						printf("if: %d\n",ifstate->if_level);
 						
 						md = P_SCRIPT_GET_IF_REG;
 						dostmnt = 0;
@@ -657,7 +709,6 @@ struct obj_dat parse_main(struct token *tokens)
 				else if (	if_get_last_mode(ifstate) == IF_IN_BRANCH ||
 							if_get_last_mode(ifstate) == IF_IN_ELSEBRANCH )
 				{
-					printf("1\n");
 					/* jump out of branch to end of conditional block. */
 					obj_add_jmp(&dat,
 						create_jmp_label(
@@ -719,7 +770,12 @@ struct obj_dat parse_main(struct token *tokens)
 						
 					}
 					else
+					{
+						obj_jmp_add_label_idx(dat.last, stype);
+						
 						md = P_OPEN_PREDEF;
+					}
+						
 				}
 			}
 			else
@@ -957,7 +1013,6 @@ struct obj_dat parse_main(struct token *tokens)
 					if (l_expr.first != 0)
 					{
 						func_add_arg(tmpfunc, parse_lexpr_idnt(&l_expr));
-						
 						
 						/* ".xxx" --> "curobj.xxx" */
 						if (tmpfunc->args->last->obj_name != 0 &&

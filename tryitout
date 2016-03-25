@@ -1,4 +1,6 @@
-gcc -ansi -lSDL2 -lSDL2_image main.c \
+
+# -pg for gprof
+gcc -ansi   -lSDL2 -lSDL2_image main.c \
 	str_num.c \
 	rpg_parse_base.c \
 	rpg_err.c \

@@ -35,7 +35,7 @@ int main(int argc, char *argv[])
 	odat = parse_main(&tokens);
 	
 	/*print_objs(&odat);
-	printf("running...\n");*/
+	printf("_________\n\n");*/
 	
 	asdat = new_asub_dat();
 	

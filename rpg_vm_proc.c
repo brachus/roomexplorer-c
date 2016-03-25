@@ -12,6 +12,18 @@
 #include "rpg_vm_proc.h"
 
 
+int var_get_int(struct var *in)
+{
+	if (!in)
+		return 0;
+	
+	if (in->type == V_INT)
+		return in->dat_int;
+	else
+		vm_err(	0,0,0,
+			"expected type int from argument.");
+}
+
 void set_var_to_idnt(struct var *vtmp, struct idnt *itmp, struct var **regs)
 {
 	struct var *tmp;
@@ -25,15 +37,37 @@ void set_var_to_idnt(struct var *vtmp, struct idnt *itmp, struct var **regs)
 			return;
 		else
 			tmp = get_var_from_varstr_obj(itmp->ob, itmp->var_name);
+		
+		/* add new var if non-existent */
+		if (!tmp && itmp->ob != 0)
+		{
+			obj_add_new_var(itmp->ob);
+			tmp = itmp->ob->vars->last;
+			tmp->name = str_cpy(itmp->var_name);
+		}
+			
+		
 		if (tmp != 0)
 			var_inplace_cpy(vtmp, tmp);
 		
 		return;
 	case IDNT_OBJ:
+		
 		return;
 	case IDNT_REG:
-		free_var(regs[itmp->idx]);
-		regs[itmp->idx] = var_cpy(vtmp); /* lets hope reg[x] is modified. */
+		if (regs[itmp->idx] != 0 && regs[itmp->idx]->type == V_INT &&
+				vtmp->type == V_INT)
+		{
+			regs[itmp->idx]->dat_int = vtmp->dat_int;
+		}
+			
+		else
+		{
+			free_var(regs[itmp->idx]);
+			regs[itmp->idx] = var_cpy(vtmp); /* lets hope reg[x] is modified. */
+		}
+			
+			
 		return;
 	default:
 		return;
@@ -119,8 +153,7 @@ struct obj *get_objpntr_from_arg(struct idnt *arg)
 struct var *get_var_from_arg(struct idnt *arg, struct var **regs)
 {
 	if (!arg)
-		vm_err(	0,0,0,
-			"bad argument.");
+		vm_err(	0,0,0, "bad argument.");
 	
 	switch(arg->type)
 	{
@@ -132,7 +165,7 @@ struct var *get_var_from_arg(struct idnt *arg, struct var **regs)
 		else
 			return get_var_from_varstr_obj(arg->ob, arg->var_name);
 	case IDNT_OBJ:
-		return 0;
+		return arg->use_var;
 	case IDNT_REG:
 		return regs[arg->idx];
 	default:
@@ -142,12 +175,11 @@ struct var *get_var_from_arg(struct idnt *arg, struct var **regs)
 
 int get_nargs(struct idnt *args)
 {
-	int n = 0;
-	struct idnt *tmp = args;
-	
-	while (tmp != 0)
+	register int n = 0;
+		
+	while (args != 0)
 	{
-		tmp = tmp->next;
+		args = args->next;
 		n++;
 	}
 	
@@ -257,6 +289,119 @@ void add_asub_main(struct asub_dat *in, struct obj_dat *objd_in)
 
 }
 
+void force_no_type(struct var *a, int notype)
+{
+	if (a->type == notype)
+		vm_err(0,0,0, "invalid type for arg.");
+}
+
+int var_is_type(struct var *a, int type)
+{
+	if (!a)
+		return 0;
+	if (a->type == type)
+		return 1;
+	else
+		return 0;
+}
+
+void do_op(char op, struct var *a, struct var *b, struct var *c)
+{
+	if (a->type == V_STR || b->type == V_STR)
+	{
+		if (op == '+')
+		{
+			if (c->dat_str != 0)
+				free_str(c->dat_str);
+			c->dat_str = create_str();
+			str_append_var(c->dat_str, a);
+			str_append_var(c->dat_str, b);
+			
+			c->type = V_STR;
+		}
+		else
+			vm_err(0,0,0, "strings only support addition.");
+		
+	}
+	else if (a->type == V_FLOAT || b->type == V_FLOAT)
+	{
+		if (a->type != V_FLOAT)
+			a->dat_float = a->dat_int;
+		if (b->type != V_FLOAT)
+			b->dat_float = b->dat_int;
+		switch (op)
+		{
+		case '+':c->dat_float = a->dat_float + b->dat_float;break;
+		case '-':c->dat_float = a->dat_float - b->dat_float;break;
+		case '*':c->dat_float = a->dat_float * b->dat_float;break;
+		case '/':
+			if (b->dat_float == 0.0)
+				vm_err(0,0,0, "division by zero.");
+			c->dat_float = a->dat_float / b->dat_float;
+			break;
+		case '%':
+			vm_err(0,0,0, "float can't do modulus.");
+		default:vm_err(0,0,0, "invalid op.");
+		}
+		c->type = V_FLOAT;
+	}
+	else
+	{
+		switch (op)
+		{
+		case '+':c->dat_int = a->dat_int + b->dat_int;break;
+		case '-':c->dat_int = a->dat_int - b->dat_int;break;
+		case '*':c->dat_int = a->dat_int * b->dat_int;break;
+		case '/':
+			if (b->dat_int == 0)
+				vm_err(0,0,0, "division by zero.");
+			c->dat_int = a->dat_int / b->dat_int;
+			break;
+		case '%':
+			if (b->dat_int == 0)
+				vm_err(0,0,0, "division by zero.");
+			c->dat_int = a->dat_int % b->dat_int;
+			break;
+		default:vm_err(0,0,0, "invalid op.");
+		}
+		c->type = V_INT;
+	}
+}
+
+int do_int_cmp(int cmp_op, int a, int b)
+{
+	switch (cmp_op)
+	{
+	case F_CMP_EQUAL:
+		if (a == b)
+			return 1;
+		break;
+	case F_CMP_NEQUAL:
+		if (a != b)
+			return 1;
+		break;
+	case F_CMP_GREATER:
+		if (a > b)
+			return 1;
+		break;
+	case F_CMP_LESSER:
+		if (a < b)
+			return 1;
+		break;
+	case F_CMP_LESSEQUAL:
+		if (a <= b)
+			return 1;
+		break;
+	case F_CMP_GREATEQUAL:
+		if (a >= b)
+			return 1;
+		break;
+	}
+	return 0;
+}
+
+
+
 
 int vm_proc_step(struct asub_i *in, struct obj_dat *odat, struct var **regs)
 {
@@ -275,11 +420,21 @@ int vm_proc_step(struct asub_i *in, struct obj_dat *odat, struct var **regs)
 	static struct var *tvars[16];
 	static struct idnt *targs[16];
 	int nargs, i;
+	
 	struct idnt *tidnt;
 	
-	struct var *retdat;
+	
+	struct var *retdat = 0;
+	static struct var *retmydat;
+	
+	if (!retmydat)
+		retmydat = new_var();
+		
+	int doret = 0;
 	
 	struct str *tstr;
+	
+	
 	
 	
 	if (!tpc)
@@ -318,18 +473,61 @@ int vm_proc_step(struct asub_i *in, struct obj_dat *odat, struct var **regs)
 		tidnt = tidnt->next;
 	}
 	
-	/* FIXME: start coding other elementary 
-	 * functions, like set, op_add, etc.
-	 */
+	
 	
 	switch(ptype)
 	{
 	case O_NONE:
 		switch (in->pc->id)
 		{
+		case F_CMP_LESSEQUAL:
+		case F_CMP_GREATEQUAL:
+		case F_CMP_LESSER:
+		case F_CMP_GREATER:
+		case F_CMP_NEQUAL:
+		case F_CMP_EQUAL:
+			doret = 1;
+			if (nargs > 0)
+			{
+				tvars[0] = get_var_from_arg(targs[0], regs);
+				tvars[1] = get_var_from_arg(targs[1], regs);
+			}
+			
+			
+			retmydat->type = V_INT;
+			
+			
+			/* ONLY INTS FOR NOW: */
+			if (tvars[0]->type == V_INT && tvars[1]->type == V_INT)
+			{
+				
+				retmydat->dat_int = do_int_cmp(
+					in->pc->id,
+					tvars[0]->dat_int,
+					tvars[1]->dat_int);
+				
+
+			}
+				
+			break;
+		case F_JMP:
+			in->pc = in->pc->lbl;
+			nostep = 1;
+			break;
+		case F_IF_JMP:
+			if (nargs > 0)
+				tvars[0] = get_var_from_arg(targs[0], regs);
+			
+			
+			if (var_get_int(tvars[0]))
+				in->pc = in->pc->lbl;
+			
+			break;
 		case F_SET:
+			doret = 1;
 			retdat = get_var_from_arg(targs[0], regs);
 			break;
+		case F_PRINT:
 		case F_PRINTLN:
 			if (nargs > 0)
 			{
@@ -337,27 +535,117 @@ int vm_proc_step(struct asub_i *in, struct obj_dat *odat, struct var **regs)
 				print_var_val(tvars[0]);
 			}
 			
-			printf("\n");
+			if (in->pc->id == F_PRINTLN)
+				printf("\n");
 			
 			break;
+		case F_OP_ADD:
+		case F_OP_SUB:
+		case F_OP_MUL:
+		case F_OP_DIV:
+		case F_OP_MOD:
+			doret = 1;
+			if (nargs == 2)
+			{
+				tvars[0] = get_var_from_arg(targs[0], regs);
+				tvars[1] = get_var_from_arg(targs[1], regs);
+			}
+			else
+				vm_err(0,0,0, "wrong number of args.");
+			
+			
+			force_no_type(tvars[0], V_LIST);
+			force_no_type(tvars[0], V_NULL);
+			force_no_type(tvars[0], V_NAME);
+			force_no_type(tvars[1], V_LIST);
+			force_no_type(tvars[1], V_NULL);
+			force_no_type(tvars[1], V_NAME);
+			
+			
+			do_op(
+				( (in->pc->id == F_OP_ADD) ? '+' :
+				  (in->pc->id == F_OP_SUB) ? '-' :
+				  (in->pc->id == F_OP_MUL) ? '*' :
+				  (in->pc->id == F_OP_DIV) ? '/' :
+					'%'
+				  ),
+				tvars[0], 
+				tvars[1], 
+				retmydat);
+			
+			
+			break;
+		case F_TYPE:
+			doret = 1;
+			if (nargs == 1)
+			{
+				tvars[0] = get_var_from_arg(targs[0], regs);
+				
+				if (tvars[0] != 0)
+				{
+					retmydat->type = V_STR;
+					free_str(retmydat->dat_str);
+					retmydat->dat_str = create_str();
+					
+					switch(tvars[0]->type)
+					{
+					case V_INT:
+						str_append_cstr(retmydat->dat_str, "int");
+						break;
+					case V_FLOAT:
+						str_append_cstr(retmydat->dat_str, "float");
+						break;
+					case V_STR:
+						str_append_cstr(retmydat->dat_str, "string");
+						break;
+					case V_LIST:
+						str_append_cstr(retmydat->dat_str, "list");
+						break;
+					default:
+						str_append_cstr(retmydat->dat_str, "null");
+						break;
+					}
+				}
+			}
+			break;
+		
+		case F_TERM_VM:
+			return PR_TERMVM;
+		
+		case F_TERM:
+			return PR_TERM;
+		
+		
 		default:
-			goto fail;
+			vm_err(0,0,0, "unrecognized function.");
 		}
 		break;
 	}
+	
 	/* copy retdat to return identifier. */
-	if (in->pc->ret != 0 && retdat != 0)
-		set_var_to_idnt(retdat, in->pc->ret, regs);
+	if (in->pc->ret != 0 && doret)
+	{
+		if (retdat)
+			set_var_to_idnt(retdat, in->pc->ret, regs);
+		else
+			set_var_to_idnt(retmydat, in->pc->ret, regs);
+			
+	}
+		
 	
 	if (!nostep)
 		in->pc = in->pc->next;
 	
+	free_var(retmydat->dat_list);
+	
+	if (!in->pc)
+	{
+		free_var(retmydat);
+		retmydat = 0;
+	}
+		
 	
 	return ret_val;
-	
-	
-  fail:
-	vm_err(0,0,0, "unrecognized function.");
 }
 
 
@@ -399,7 +687,11 @@ void vm_proc_full(struct asub_dat *in, struct obj_dat *odat, struct var **regs)
 			}
 		}
 		
+		if (!stmp)
+			break;
+			
 		prev = stmp;
 		stmp = stmp->next;
+		
 	}
 }

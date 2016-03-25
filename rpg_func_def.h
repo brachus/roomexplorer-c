@@ -7,7 +7,6 @@
 #define F_IF_JMP	1
 */
 
-#define NFUNCNAMES 49
 
 enum
 {
@@ -51,6 +50,7 @@ enum
 	F_TMAP_FILL_LAYER,
 	F_MSG_SEND,
 	F_MSG_CLEAR,
+	F_MSG_CHECK,
 	F_OPEN,
 	F_CLOSE,
 	F_SETMODE,
@@ -58,7 +58,10 @@ enum
 	F_STOPSND,
 	F_STOPALL,
 	F_ADDITEM,
-	F_DROPITEM
+	F_DROPITEM,
+	F_PRINT,
+	F_TYPE,
+	NFUNCNAMES /* this must be kept as last item */
 };
 
 

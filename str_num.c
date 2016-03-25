@@ -61,7 +61,7 @@ void str_append_char(struct str* in_str, char in)
 	}
 		
 	in_str->last->dat = in;
-	in_str->last->next = NULL;
+	in_str->last->next = 0;
 	
 	in_str->length++;
 }
@@ -93,6 +93,20 @@ void str_append_float(struct str* tstr, float tfloat)
 	str_append_cstr(tstr, c);
 	
 	free(c);
+}
+
+void str_append_str(struct str *in, struct str *in2)
+{
+	if (!in || !in2)
+		return;
+		
+	struct str_l *tmp = in2->first;
+	
+	while (tmp != 0)
+	{
+		str_append_char(in, tmp->dat);
+		tmp = tmp->next;
+	}
 }
 
 void str_print(struct str* in)
@@ -200,6 +214,7 @@ int str_cmp(struct str *a, struct str *b)
 	return 0;
 }
 
+/* watch this ... */
 int str_cmp_cstr(struct str *a, char *b)
 {
 	struct str_l *tmpa;
@@ -207,17 +222,19 @@ int str_cmp_cstr(struct str *a, char *b)
 	
 	tmpa = a->first;
 	
-	while (b[tmpb] != '\0' && tmpa != NULL)
+	while (b[tmpb] != '\0' && tmpa != 0)
 	{
 		if (tmpa->dat != b[tmpb])
 			return 0;
+			
+		if (b[tmpb+1] == '\0' && !tmpa->next )
+			return 1;
 		
 		tmpa = tmpa->next;
 		tmpb++;
 	}
 	
-	
-	return 1;
+	return 0;
 }
 
 struct str *str_cpy(struct str *in)
@@ -239,8 +256,30 @@ struct str *str_cpy(struct str *in)
 
 int chtoi(char ch)
 {
-	char tmp[2];
-	tmp[0] = ch;
-	return atoi(tmp);
+	switch(ch)
+	{
+	case '0':
+		return 0;
+	case '1':
+		return 1;
+	case '2':
+		return 2;
+	case '3':
+		return 3;
+	case '4':
+		return 4;
+	case '5':
+		return 5;
+	case '6':
+		return 6;
+	case '7':
+		return 7;
+	case '8':
+		return 8;
+	case '9':
+		return 9;
+	default:
+		return -1;
+	}
 }
 

@@ -27,11 +27,13 @@ struct idnt *parse_lexpr_idnt(struct token *tokens)
 			{
 				nidnt->type = IDNT_REG;
 				nidnt->idx = parse_ret_reg(nvar->dat_str);
+				nidnt->use_var = nvar;
 			}
 			else
 			{
 				nidnt->type = IDNT_OBJ;
 				nidnt->obj_name = str_cpy(nvar->dat_str);
+				nidnt->use_var = nvar;
 			}
 			
 		}
@@ -40,9 +42,9 @@ struct idnt *parse_lexpr_idnt(struct token *tokens)
 			nidnt->type = IDNT_OBJVAR;
 			nidnt->obj_name = str_cpy(nvar->dat_str);
 			nidnt->var_name = str_cpy(nvar->dat_str_1);
+			nidnt->use_var = nvar;
 		}
 		
-		free_var(nvar);
 	}
 	else
 	{
@@ -50,7 +52,7 @@ struct idnt *parse_lexpr_idnt(struct token *tokens)
 		nidnt->use_var = nvar;
 	}
 	
-	return nidnt; /*FIXME: returns int?*/
+	return nidnt;
 }
 
 /* creates new var from literal expression (tokens) */
@@ -62,8 +64,9 @@ struct var *parse_literal_expr(struct token *tokens)
 	
 	/* used for keeping track multi-dimensional lists */
 	struct var *map[MAX_LIST_NESTS];
-	for (i=0;i<7;i++)
-		map[i] = NULL;
+	for (i=0; i<MAX_LIST_NESTS; i++)
+		map[i] = 0;
+		
 	int map_lvl = 0;
 
 	add_token(tokens, T_EOF, 0, 0, "");
@@ -77,7 +80,7 @@ struct var *parse_literal_expr(struct token *tokens)
 	
 	tmp = tokens->first;
 	
-	while (tmp != NULL)
+	while (tmp != 0)
 	{
 		switch(md)
 		{
@@ -209,7 +212,7 @@ struct var *parse_literal_expr(struct token *tokens)
 					map_lvl++;
 					
 					if (map_lvl >= MAX_LIST_NESTS)
-						vm_err(tmp->fn, tmp->line, tmp->col, "too nested lists.");
+						vm_err(tmp->fn, tmp->line, tmp->col, "too many nested lists.");
 				}
 				else if ( str_cmp_cstr(tmp->dat_str[0],"-") )
 					tminus = -1;
