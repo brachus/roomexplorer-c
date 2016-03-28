@@ -40,6 +40,8 @@ struct var
 	int			dat_int; /* if var of type name, the will be obj idx of first name */
 	float		dat_float;
 	
+	struct media_lib_i *dat_media;
+	
 	/* if var itself is a list, this references first item in list. */
 	struct var *dat_list;
 	
@@ -164,3 +166,5 @@ void print_objs(struct obj_dat *in);
 int get_funcname_id(struct str *in);
 char *get_funcname(int id);
 void str_append_var(struct str *in, struct var *vin);
+struct var *get_var_from_list(struct var *lst, int idx);
+int get_list_length(struct var *lst);

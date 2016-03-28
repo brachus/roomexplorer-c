@@ -1,6 +1,8 @@
 
 /* default "filled-in" predefs are defined here: */
 
+/* (object names don't matter here) */
+
 game _
 {
 	.bg_color = [0,0,0];  /* base colors for when nothing is rendered*/
@@ -101,3 +103,11 @@ game _
 	 
 	 .audio_master_gain=1.0;
 }
+
+sprite __
+{
+	.gfx = [];
+	.center = [];
+	.frames = [];
+	.loop = 0;
+} 

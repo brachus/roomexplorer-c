@@ -12,5 +12,5 @@
 
 #define MAX_LIST_NESTS		16
 
-struct idnt *parse_lexpr_idnt(struct token *tokens);
-struct var *parse_literal_expr(struct token *tokens);
+struct idnt *parse_lexpr_idnt(struct token *tokens, struct media_lib *md_lib);
+struct var *parse_literal_expr(struct token *tokens, struct media_lib *md_lib);

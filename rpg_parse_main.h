@@ -87,5 +87,5 @@ void obj_do_each(struct obj_dat *in);
 int get_obj_idx(struct obj_dat *in, struct str *obj_str);
 struct obj *get_obj_pntr(struct obj_dat *in, struct str *obj_str);
 void obj_do_itype(struct obj *in);
-struct obj_dat parse_main(struct token *tokens);
+struct obj_dat parse_main(struct token *tokens, struct media_lib *md_lib);
 

@@ -6,6 +6,7 @@
 #include "rpg_parse_token.h"
 #include "rpg_obj_struct.h"
 #include "rpg_func_def.h"
+#include "rpg_media.h"
 
 
 
@@ -30,6 +31,8 @@ void var_init(struct var *in)
 	
 	in->dat_int = 0;
 	in->dat_float = 0;
+	
+	in->dat_media = 0;
 	
 	in->dat_list = 0;
 	in->list_next = 0;
@@ -706,6 +709,44 @@ void str_append_var(struct str *in, struct var *vin)
 }
 
 
+struct var *get_var_from_list(struct var *lst, int idx)
+{
+	struct var *tmp;
+	int i=0;
+	
+	if (!lst)
+		return 0;
+		
+	tmp = lst->dat_list;
+	
+	while (tmp != 0)
+	{
+		if (idx == i)
+			return tmp;
+		
+		i++;
+		tmp = tmp->list_next;
+	}
+	
+	return 0;
+	
+};
 
+int get_list_length(struct var *lst)
+{
+	if (!lst)
+		return 0;
+		
+	int ln = 0;
+	struct var *tmp = lst->dat_list;
+	
+	while (tmp != 0)
+	{
+		ln++;
+		tmp = tmp->list_next;
+	}
+	
+	return ln;
+}
 
 

@@ -5,6 +5,7 @@
 #include "rpg_parse_base.h"
 #include "rpg_parse_token.h"
 #include "rpg_obj_struct.h"
+#include "rpg_media.h"
 #include "rpg_parse_expr.h"
 #include "rpg_parse_main.h"
 #include "rpg_func_def.h"
@@ -440,7 +441,7 @@ void obj_do_itype(struct obj *in)
 		in->itype = O_NONE;
 }
 
-struct obj_dat parse_main(struct token *tokens)
+struct obj_dat parse_main(struct token *tokens, struct media_lib *md_lib)
 {
 	
 	int md, hold, regn,
@@ -598,7 +599,7 @@ struct obj_dat parse_main(struct token *tokens)
 		case P_GET_PREDEF_LITERAL:
 			if (	token_if_sym(tmp_tok, ";")	)
 			{
-				obj_add_var(dat.last, parse_literal_expr(&l_expr));
+				obj_add_var(dat.last, parse_literal_expr(&l_expr, md_lib));
 				dat.last->vars->last->name = str_cpy(used_predef_names->last->dat_str);
 				md = P_OPEN_PREDEF;
 			}
@@ -1012,7 +1013,7 @@ struct obj_dat parse_main(struct token *tokens)
 				{
 					if (l_expr.first != 0)
 					{
-						func_add_arg(tmpfunc, parse_lexpr_idnt(&l_expr));
+						func_add_arg(tmpfunc, parse_lexpr_idnt(&l_expr, md_lib));
 						
 						/* ".xxx" --> "curobj.xxx" */
 						if (tmpfunc->args->last->obj_name != 0 &&
@@ -1032,7 +1033,7 @@ struct obj_dat parse_main(struct token *tokens)
 				}
 				else  
 				{
-					if (token_if_sym(tmp_tok, "["))
+					if (token_if_sym(tmp_tok, "[") || token_if_sym(tmp_tok, "{"))
 						blvl++;
 					add_cpy_token(&l_expr, tmp_tok);
 				}
@@ -1040,7 +1041,7 @@ struct obj_dat parse_main(struct token *tokens)
 			}
 			else
 			{
-				if (token_if_sym(tmp_tok, "]"))
+				if (token_if_sym(tmp_tok, "]") || token_if_sym(tmp_tok, "}"))
 					blvl--;
 				add_cpy_token(&l_expr, tmp_tok);
 			}

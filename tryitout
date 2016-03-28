@@ -8,4 +8,6 @@ gcc -ansi   -lSDL2 -lSDL2_image main.c \
 	rpg_obj_struct.c\
 	rpg_parse_expr.c\
 	rpg_parse_main.c\
-	rpg_vm_proc.c
+	rpg_vm_proc.c \
+	rpg_media.c \
+	rpg_sdl.c

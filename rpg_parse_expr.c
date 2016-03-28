@@ -6,17 +6,16 @@
 #include "rpg_parse_base.h"
 #include "rpg_parse_token.h"
 #include "rpg_obj_struct.h"
+#include "rpg_media.h"
 #include "rpg_parse_expr.h"
-#include "rpg_media_struct.h"
 
 
-
-struct idnt *parse_lexpr_idnt(struct token *tokens)
+struct idnt *parse_lexpr_idnt(struct token *tokens, struct media_lib *md_lib)
 {
 	struct idnt *nidnt = new_idnt();
 	struct var *nvar;
 	
-	nvar = parse_literal_expr(tokens);
+	nvar = parse_literal_expr(tokens, md_lib);
 	
 	
 	if (nvar->type == V_NAME)
@@ -56,11 +55,12 @@ struct idnt *parse_lexpr_idnt(struct token *tokens)
 }
 
 /* creates new var from literal expression (tokens) */
-struct var *parse_literal_expr(struct token *tokens)
+struct var *parse_literal_expr(struct token *tokens, struct media_lib *md_lib)
 {	
 	int md, ttype, tminus, hold, i;
 	struct token_l *tmp;
 	struct var *nvar;
+	struct var *vtmp = 0;
 	
 	/* used for keeping track multi-dimensional lists */
 	struct var *map[MAX_LIST_NESTS];
@@ -215,7 +215,7 @@ struct var *parse_literal_expr(struct token *tokens)
 				}
 				else if ( str_cmp_cstr(tmp->dat_str[0],"[") )
 				{
-					if (map[map_lvl] == NULL)
+					if (!map[map_lvl])
 					{
 						map[map_lvl-1]->dat_list = new_var();
 						map[map_lvl] = map[map_lvl-1]->dat_list;
@@ -272,6 +272,10 @@ struct var *parse_literal_expr(struct token *tokens)
 				vm_err(tmp->fn, tmp->line, tmp->col, "expected end of literal.");
 			break;
 		case P_OPEN_MEDIA:
+			nvar = new_var();
+			nvar->type = V_LIST;
+			vtmp = 0;
+			
 			if (tmp->type == T_NAME && str_cmp_cstr(tmp->dat_str[0],"img"))
 				md = P_IMG_GETSTR;
 			else if (tmp->type == T_NAME && str_cmp_cstr(tmp->dat_str[0],"snd"))
@@ -280,11 +284,38 @@ struct var *parse_literal_expr(struct token *tokens)
 				vm_err(tmp->fn, tmp->line, tmp->col, "expected name \"img\" or \"snd\".");
 			break;
 		case P_IMG_GETSTR:
-			/* for media, create a list of int indexes to media lib.  */
-			nvar = new_var();
-			nvar->type = V_LIST;
+			/* for media, create a list of pointers to media lib.  */
+			if (tmp->type == T_STR)
+			{
+				if (!vtmp)
+				{
+					nvar->dat_list = new_var();
+					vtmp = nvar->dat_list;
+				}
+				else
+				{
+					vtmp->list_next = new_var();
+					vtmp = vtmp->list_next;
+				}
+				
+				if (md_lib != 0)
+				{
+					
+					
+					vtmp->type = V_INT;
+				
+					ml_add_img(md_lib, tmp->dat_str[0]);
+					
+					vtmp->dat_media = md_lib->last;
+				}
+				
+			}
+			else if (tmp->type == T_SYM && str_cmp_cstr(tmp->dat_str[0],"}"))
+				md = P_EOF;
+			else
+				vm_err(tmp->fn, tmp->line, tmp->col,
+					"expected str or closing bracket for media expression.");
 			
-			/* UNFINISHED */
 			break;
 		case P_SND_GETSTR:
 			break;

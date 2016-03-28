@@ -6,6 +6,7 @@
 #include "rpg_parse_base.h"
 #include "rpg_parse_token.h"
 #include "rpg_obj_struct.h"
+#include "rpg_media.h"
 #include "rpg_parse_expr.h"
 #include "rpg_func_def.h"
 #include "rpg_parse_main.h"

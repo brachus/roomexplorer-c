@@ -1,11 +1,19 @@
 
 
+sprint testsprt
+{
+	.gfx = {img 'test.png'};
+}
+
 game main
 {
+
+	
 	
 	init
 	{
-		println(.tmap_layer_opacity);
+		println(testsprt.center);
+		sleep(60);
 	}
 }
 
