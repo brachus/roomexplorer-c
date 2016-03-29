@@ -7,9 +7,6 @@ sprint testsprt
 
 game main
 {
-
-	
-	
 	init
 	{
 		println(testsprt.center);
