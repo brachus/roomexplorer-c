@@ -35,12 +35,12 @@ struct var
 	struct str 	*dat_str_1; /* for names.*/
 	struct str 	*dat_str_2;
 	
-	struct obj *ob; /* */
+	struct obj *ob; /* pointer to object */
 	
 	int			dat_int; /* if var of type name, the will be obj idx of first name */
 	float		dat_float;
 	
-	struct media_lib_i *dat_media;
+	struct media_lib_i *dat_media; /* pointer to an item in media_lib */
 	
 	/* if var itself is a list, this references first item in list. */
 	struct var *dat_list;
@@ -168,3 +168,6 @@ char *get_funcname(int id);
 void str_append_var(struct str *in, struct var *vin);
 struct var *get_var_from_list(struct var *lst, int idx);
 int get_list_length(struct var *lst);
+
+struct var *get_var_from_cstr(struct var *frst, char *cstr);
+struct obj *get_obj_from_cstr(struct obj_dat *odat, char *type, char *name);

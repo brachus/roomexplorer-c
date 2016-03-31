@@ -22,6 +22,7 @@ struct asub_dat
 };
 
 int var_get_int(struct var *in);
+struct str *var_get_str(struct var *in);
 void set_var_to_idnt(struct var *vtmp, struct idnt *itmp, struct var **regs);
 struct var *get_var_from_varstr_obj(struct obj *otmp, struct str *vname);
 struct str *get_str_from_arg(struct idnt *arg, struct var **regs);
@@ -37,5 +38,5 @@ void rm_asub_i(struct asub_dat *in, struct asub_i *s);
 void add_asub_main(struct asub_dat *in, struct obj_dat *objd_in);
 int do_int_cmp(int cmp_op, int a, int b);
 void obj_add_def(struct obj_dat *main, struct obj_dat *defs);
-int vm_proc_step(struct asub_i *in, struct obj_dat *odat, struct var **regs);
-int vm_proc_full(struct asub_dat *in, struct obj_dat *odat, struct var **regs);
+int vm_proc_step(struct asub_i *in, struct obj_dat *odat, struct var **regs, struct input_keys *keys);
+int vm_proc_full(struct asub_dat *in, struct obj_dat *odat, struct var **regs, struct input_keys *keys);

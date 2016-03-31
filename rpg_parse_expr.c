@@ -15,8 +15,8 @@ struct idnt *parse_lexpr_idnt(struct token *tokens, struct media_lib *md_lib)
 	struct idnt *nidnt = new_idnt();
 	struct var *nvar;
 	
-	nvar = parse_literal_expr(tokens, md_lib);
 	
+	nvar = parse_literal_expr(tokens, md_lib);
 	
 	if (nvar->type == V_NAME)
 	{
@@ -163,7 +163,7 @@ struct var *parse_literal_expr(struct token *tokens, struct media_lib *md_lib)
 				vm_err(tmp->fn, tmp->line, tmp->col, "expected numeral.");
 			break;
 		case P_ARRAY_GET_ITEM:
-			if (tmp->type == T_FLOAT || tmp->type == T_INT || tmp->type == T_STR)
+			if (tmp->type == T_FLOAT || tmp->type == T_INT || tmp->type == T_STR || tmp->type == T_NAME)
 			{
 				if (map[map_lvl] == NULL)
 				{
@@ -199,7 +199,17 @@ struct var *parse_literal_expr(struct token *tokens, struct media_lib *md_lib)
 				tminus = 1;
 				break;
 			case T_NAME:
-				vm_err(tmp->fn, tmp->line, tmp->col, "names aren't supported in lists.");
+				map[map_lvl]->type = V_NAME;
+				map[map_lvl]->dat_str = str_cpy(tmp->dat_str[0]);
+				
+				if (tmp->dat_str[1]->length > 0)
+					map[map_lvl]->dat_str_1 = str_cpy(tmp->dat_str[1]);
+				
+				if (tmp->dat_str[2]->length > 0)
+					map[map_lvl]->dat_str_2 = str_cpy(tmp->dat_str[2]);
+				
+				tminus = 1;
+					
 				break;
 			case T_SYM:
 				if ( str_cmp_cstr(tmp->dat_str[0],"]") )

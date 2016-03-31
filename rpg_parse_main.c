@@ -437,6 +437,10 @@ void obj_do_itype(struct obj *in)
 {
 	if (  str_cmp_cstr(in->type, "game")  )
 		in->itype = O_GAME;
+	else if (  str_cmp_cstr(in->type, "sprite")  )
+		in->itype = O_SPRT;
+	else if (  str_cmp_cstr(in->type, "actor")  )
+		in->itype = O_ACTOR;
 	else
 		in->itype = O_NONE;
 }
@@ -480,7 +484,7 @@ struct obj_dat parse_main(struct token *tokens, struct media_lib *md_lib)
 	tmp_tok = tokens->first;
 	
 	while (tmp_tok != 0)
-	{		
+	{				
 		switch (md)
 		{
 		case P_OPEN:

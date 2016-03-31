@@ -1,6 +1,9 @@
 
 
 #include "inc.h"
+
+
+
 #include "str_num.h"
 #include "rpg_err.h"
 #include "rpg_parse_base.h"
@@ -10,6 +13,11 @@
 #include "rpg_parse_expr.h"
 #include "rpg_func_def.h"
 #include "rpg_parse_main.h"
+
+
+#include "rpg_sdl.h"
+#include "rpg_input.h"
+
 #include "rpg_vm_proc.h"
 
 
@@ -20,6 +28,18 @@ int var_get_int(struct var *in)
 	
 	if (in->type == V_INT)
 		return in->dat_int;
+	else
+		vm_err(	0,0,0,
+			"expected type int from argument.");
+}
+
+struct str *var_get_str(struct var *in)
+{
+	if (!in)
+		return 0;
+	
+	if (in->type == V_STR)
+		return in->dat_str;
 	else
 		vm_err(	0,0,0,
 			"expected type int from argument.");
@@ -271,26 +291,15 @@ void rm_asub_i(struct asub_dat *in, struct asub_i *s)
 
 void add_asub_main(struct asub_dat *in, struct obj_dat *objd_in)
 {
-	struct obj *otmp;
-	struct obj *ofnd;
+	struct obj *omain;
 	
-	otmp = objd_in->first;
+	omain = get_obj_from_cstr(objd_in, "game", "main");
 	
-	while (otmp != 0)
-	{
-		if (str_cmp_cstr(otmp->name, "main") && str_cmp_cstr(otmp->type, "game"))
-		{
-			ofnd = otmp;
-			break;
-		}
-		otmp = otmp->next;
-	}
-	
-	if (!ofnd)
+	if (!omain)
 		vm_err(0,0,0, "no main object.");
 	
 	
-	add_asub_i(in, ofnd);	
+	add_asub_i(in, omain);	
 
 }
 
@@ -446,11 +455,10 @@ void obj_add_def(struct obj_dat *main, struct obj_dat *defs)
 	while (otmp != 0)
 	{
 		dtmp = get_obj_matching_type(defs, otmp->itype);
+		
 		/* look for first object in defs with same type */
-		if (dtmp != 0)
-		{
+		if (dtmp != 0 && otmp->itype != O_NONE)
 			fill_obj_defs(otmp, dtmp);
-		}
 		
 		otmp = otmp->next;
 	}
@@ -458,7 +466,7 @@ void obj_add_def(struct obj_dat *main, struct obj_dat *defs)
 }
 
 
-int vm_proc_step(struct asub_i *in, struct obj_dat *odat, struct var **regs)
+int vm_proc_step(struct asub_i *in, struct obj_dat *odat, struct var **regs, struct input_keys *keys)
 {
 	
 	int ret_val = PR_STEP;
@@ -475,8 +483,14 @@ int vm_proc_step(struct asub_i *in, struct obj_dat *odat, struct var **regs)
 	struct idnt *tidnt;
 	
 	
-	struct var *retdat = 0;
+	struct var *retdat;
 	static struct var *retmydat;
+	
+	static struct obj *omain = 0;
+	if (!omain)
+		omain = get_obj_from_cstr(odat, "game","main");
+	
+	retdat = 0;
 	
 	if (!retmydat)
 		retmydat = new_var();
@@ -560,7 +574,7 @@ int vm_proc_step(struct asub_i *in, struct obj_dat *odat, struct var **regs)
 			break;
 		case F_SET:
 			doret = 1;
-			retdat = get_var_from_arg(targs[0], regs);
+			retdat = tvars[0];
 			break;
 		case F_PRINT:
 		case F_PRINTLN:
@@ -660,6 +674,26 @@ int vm_proc_step(struct asub_i *in, struct obj_dat *odat, struct var **regs)
 			if (nargs == 1)
 				in->timer = tvars[0]->dat_int;
 			break;
+			
+		case F_KEY:
+			doret = 1;
+			
+			retmydat->type = V_INT;
+			
+			retmydat->dat_int = 0;
+						
+			if (nargs == 1)
+			{
+				tvars[1] = get_var_from_cstr(omain->vars, "key_active");
+				
+				if ( keys_match_str(keys->hold, var_get_str(tvars[0])) &&
+					var_get_int(tvars[1]) == 1		)
+					retmydat->dat_int = 1;
+					
+				
+			}
+			
+			break;
 		
 		default:
 			vm_err(0,0,0, "unrecognized function.");
@@ -695,7 +729,7 @@ int vm_proc_step(struct asub_i *in, struct obj_dat *odat, struct var **regs)
 
 
 
-int vm_proc_full(struct asub_dat *in, struct obj_dat *odat, struct var **regs)
+int vm_proc_full(struct asub_dat *in, struct obj_dat *odat, struct var **regs, struct input_keys *keys)
 {
 	struct asub_i *stmp, *prev;
 	int step, rval;
@@ -716,7 +750,7 @@ int vm_proc_full(struct asub_dat *in, struct obj_dat *odat, struct var **regs)
 			}
 			else
 			{
-				rval = vm_proc_step(stmp, odat, regs);
+				rval = vm_proc_step(stmp, odat, regs, keys);
 				
 				switch(rval)
 				{
@@ -745,4 +779,44 @@ int vm_proc_full(struct asub_dat *in, struct obj_dat *odat, struct var **regs)
 		return 0;
 	
 	return 1;
+}
+
+int update_actors(struct obj_dat *odat)
+{
+	static struct obj *omain = 0;
+	if (!omain)
+		omain = get_obj_from_cstr(odat, "game","main");
+	
+	struct var *active_actors = get_var_from_cstr(omain->vars, "active_actors");
+	struct var *tmp;
+	struct var *dpos, *pos;
+	
+	struct obj *t_actor = 0;
+	
+	tmp = active_actors->dat_list;
+	
+	while (tmp != 0)
+	{
+		t_actor = tmp->ob;
+		
+		if (!t_actor)
+			break;
+		
+		dpos = get_var_from_cstr(t_actor->vars, "dpos");
+		pos = get_var_from_cstr(t_actor->vars, "pos");
+		
+		/* pos += dpos */
+		
+		pos->dat_list->dat_int += dpos->dat_list->dat_int;
+		pos->dat_list->list_next->dat_int +=
+			dpos->dat_list->list_next->dat_int;
+			
+		dpos->dat_list->dat_int = 0; /* dpos = [0,0]]*/
+		dpos->dat_list->list_next->dat_int = 0;
+		
+		
+		tmp = tmp->list_next;
+	}
+	
+	return 0;
 }

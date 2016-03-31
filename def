@@ -110,4 +110,36 @@ sprite __
 	.center = [];
 	.frames = [];
 	.loop = 0;
-} 
+}
+
+actor ___
+{
+	.pos=[0, 0];		/* pos in global coords. */
+	.scale=[1.0, 1.0];
+	.dpos=[0,0];
+	.dir="d";	/* u d l r ul dl ur dr */
+	.bbox=[-10,10, 10,-10]; /* coords relative to pos. [x0,y0,x1,y1].  xy0=top-left, xy1=bot_right */
+
+	.sprt=-1;		/* sprite to use */
+	.sprt_curframe=0;
+	.sprt_curframetime=0;
+	.sprt_animate=1;
+	.snd=-1;		/* audio attached to obj */
+
+	.solid=1; /* other actors may be clipped against self. */
+
+	.get_msg=1;
+
+	.layer=0; /* layer actor is rendered on. */
+
+	.if_mov=0; /* conditional var for movement */
+	.if_diag=0; /* ** only touched by vm ** */
+
+	.msg_srcs=[]; /* list if id's to message sources. */
+	.msg_strs=[]; /* list of messages. */
+	.msg_id=""; /* actor's identifier (may not be unique) in sending/recieving messages. */
+	.msg_upclose_dst=10; /* general distance in pixels "upclose" message may be sent. */
+
+	.autodir_sprt_fxd=[-1,-1,-1,-1,-1,-1,-1,-1]; /* list of sprites in order: u d l r ul ur dl dr */
+	.autodir_sprt_mov=[-1,-1,-1,-1,-1,-1,-1,-1];
+}

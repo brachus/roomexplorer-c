@@ -150,6 +150,8 @@ void var_inplace_cpy(struct var *cpyme, struct var *istay)
 		istay->dat_list = var_cpy(cpyme->dat_list);
 	if (cpyme->list_next != 0)
 		istay->list_next = var_cpy(cpyme->list_next);
+	istay->ob = cpyme->ob;
+	istay->dat_media = cpyme->dat_media;
 }
 
 struct var *var_cpy(struct var *v)
@@ -740,6 +742,9 @@ int get_list_length(struct var *lst)
 	int ln = 0;
 	struct var *tmp = lst->dat_list;
 	
+	if (!tmp)
+		return 0;
+	
 	while (tmp != 0)
 	{
 		ln++;
@@ -747,6 +752,63 @@ int get_list_length(struct var *lst)
 	}
 	
 	return ln;
+}
+
+struct var *get_var_from_cstr(struct var *frst, char *cstr)
+{
+	if (!frst)
+		return 0;
+	
+	struct var *tmp;
+	
+	tmp = frst;
+	
+	while (tmp != 0)
+	{
+		if (str_cmp_cstr(tmp->name, cstr))
+			return tmp;
+			
+		tmp = tmp->next;
+	}
+	
+	printf("varname: %s\n", cstr);
+	vm_err(0,0,0,"couldn't find var.");
+};
+
+struct obj *get_obj_from_cstr(struct obj_dat *odat, char *type, char *name)
+{
+	struct obj *tmp;
+	
+	if (!odat)
+		return 0;
+	
+	tmp = odat->first;
+	
+	if (!tmp)
+		return 0;
+	
+	while (tmp != 0)
+	{
+		if (str_cmp_cstr(tmp->name, name) &&
+			str_cmp_cstr(tmp->type, type))
+			return tmp;
+			
+		tmp = tmp->next;
+	}
+	
+	return 0;
+};
+
+/* addme doesnt get copied! */
+void list_append(struct var *lst, struct var *addme)
+{
+	if (!lst)
+		return;
+	
+	if (lst->type == V_LIST)
+	{
+		
+	}
 }
 
 

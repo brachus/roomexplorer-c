@@ -1,6 +1,8 @@
 
 
-/* TODO:  start coding media lib and input event handlers. */
+
+#define DEBUG 0
+
 
 #include "inc.h"
 #include "str_num.h"
@@ -12,8 +14,12 @@
 #include "rpg_parse_expr.h"
 #include "rpg_func_def.h"
 #include "rpg_parse_main.h"
-#include "rpg_vm_proc.h"
+
 #include "rpg_sdl.h"
+#include "rpg_input.h"
+
+#include "rpg_vm_proc.h"
+
 
 
 int main(int argc, char *argv[])
@@ -28,6 +34,7 @@ int main(int argc, char *argv[])
 	struct var **regs;
 	struct media_lib *md_lib;
 	struct sdl_win *window;
+	struct input_keys *keys = new_input_keys();
 	
 	if (argc > 1)
 		str_append_cstr(fn, argv[1]);
@@ -59,6 +66,9 @@ int main(int argc, char *argv[])
 	/* load media */
 	md_lib_loadall(md_lib);
 	
+	/* print objs */
+	if (DEBUG)
+		print_objs(&odat);
 	
 	regs = init_regs();
 	asdat = new_asub_dat();
@@ -71,12 +81,16 @@ int main(int argc, char *argv[])
 	
 	while (1)
 	{
-		if (!vm_proc_full(asdat, &odat, regs))
+		handle_events(keys);
+				
+		if (!vm_proc_full(asdat, &odat, regs, keys))
 			break;
-		
+			
 		clear_sdl_win(window, 0,0,0);
 		
 		update_sdl_win(window);
+		
+		clear_keys(keys);
 		
 		tick_frame(60);
 	}

@@ -1,16 +1,31 @@
 
 
-sprint testsprt
+sprite testsprt
 {
 	.gfx = {img 'test.png'};
+}
+
+actor testactor
+{
+	.sprite = testsprt;
+}
+
+_ dummy
+{
+	init
+	{
+		println('hello, world');
+	}
 }
 
 game main
 {
 	init
 	{
-		println(testsprt.center);
-		sleep(60);
+		println('actor sprite:');
+		println(testactor.sprite);
+			
+		
 	}
 }
 

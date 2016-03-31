@@ -23,4 +23,4 @@ struct media_lib
 SDL_Surface *media_lib_get_img(struct media_lib *in, int idx);
 struct media_lib_i *mli_new_img(struct str *fn);
 struct media_lib *new_media_lib();
-void *ml_add_img(struct media_lib *in, struct str *fn);
+void ml_add_img(struct media_lib *in, struct str *fn);
