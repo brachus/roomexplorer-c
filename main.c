@@ -18,7 +18,10 @@
 #include "rpg_sdl.h"
 #include "rpg_input.h"
 
+#include "rpg_render.h"
+
 #include "rpg_vm_proc.h"
+
 
 
 
@@ -35,6 +38,8 @@ int main(int argc, char *argv[])
 	struct media_lib *md_lib;
 	struct sdl_win *window;
 	struct input_keys *keys = new_input_keys();
+	struct rpg_render *renderer;
+	struct obj *omain;
 	
 	if (argc > 1)
 		str_append_cstr(fn, argv[1]);
@@ -73,25 +78,29 @@ int main(int argc, char *argv[])
 	regs = init_regs();
 	asdat = new_asub_dat();
 	add_asub_main(asdat, &odat);
+	
+	omain = get_obj_from_cstr(&odat, "game", "main");
+	if (!omain)
+		vm_err(0,0,0,"no main object.");
 
 
 	/* start sdl up */
 	sdl_init();
 	window = mk_sdl_win("test");
 	
+	renderer = new_vm_render(window);
+	
 	while (1)
 	{
 		handle_events(keys);
-				
+		clear_sdl_win(window, 0,0,0,255);
+		clear_vm_render(renderer);
 		if (!vm_proc_full(asdat, &odat, regs, keys))
 			break;
-			
-		clear_sdl_win(window, 0,0,0);
-		
+		update_actors(omain, renderer);
+		vm_render_dorender(renderer, omain);
 		update_sdl_win(window);
-		
 		clear_keys(keys);
-		
 		tick_frame(60);
 	}
 	

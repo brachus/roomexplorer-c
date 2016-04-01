@@ -40,3 +40,5 @@ int do_int_cmp(int cmp_op, int a, int b);
 void obj_add_def(struct obj_dat *main, struct obj_dat *defs);
 int vm_proc_step(struct asub_i *in, struct obj_dat *odat, struct var **regs, struct input_keys *keys);
 int vm_proc_full(struct asub_dat *in, struct obj_dat *odat, struct var **regs, struct input_keys *keys);
+
+int update_actors(struct obj *omain, struct rpg_render *rndr);

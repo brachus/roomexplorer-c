@@ -811,4 +811,70 @@ void list_append(struct var *lst, struct var *addme)
 	}
 }
 
+struct var *lst_get_idx(struct var *lst, int idx)
+{
+	struct var *tmp;
+	int i;
+	
+	tmp = lst->dat_list;
+	
+	for (i=0;;i++)
+	{
+		if (!tmp)
+			return 0;
+		
+		if (i == idx)
+			return tmp;
+		
+		tmp = tmp->list_next;
+	}
+	
+	vm_err(0,0,0,"out of bounds index.");
+};
 
+void var_force_coord(struct var *in)
+{
+	if (!in)
+		vm_err(0,0,0,"null var.");
+		
+	if (in->type == V_LIST &&
+		in->dat_list != 0 &&
+		in->dat_list->type == V_INT &&
+		in->dat_list->list_next != 0 && 
+		in->dat_list->list_next->type == V_INT)
+		return;
+		
+	printf("var ");
+	str_print(in->name);
+	printf(":\n");
+	vm_err(0,0,0,"var is not an integer coordinate.");
+}
+
+void var_force_str(struct var *in)
+{
+	if (!in)
+		vm_err(0,0,0,"null var.");
+		
+	if (in->type == V_STR &&
+		in->dat_str != 0)
+		return;
+		
+	printf("var ");
+	str_print(in->name);
+	printf(":\n");
+	vm_err(0,0,0,"var is not a string.");
+}
+
+void var_force_int(struct var *in)
+{
+	if (!in)
+		vm_err(0,0,0,"null var.");
+		
+	if (in->type == V_INT)
+		return;
+		
+	printf("var ");
+	str_print(in->name);
+	printf(":\n");
+	vm_err(0,0,0,"var is not int.");
+}

@@ -2,30 +2,37 @@
 
 sprite testsprt
 {
+	.layer = 0;
+	.center = [[0,0]];
 	.gfx = {img 'test.png'};
 }
 
 actor testactor
 {
-	.sprite = testsprt;
+	.sprt = testsprt;
+	.pos = [0,0];
 }
 
-_ dummy
-{
-	init
-	{
-		println('hello, world');
-	}
-}
 
 game main
 {
-	init
+
+	.active_actors = [testactor];
+	
+	body
 	{
-		println('actor sprite:');
-		println(testactor.sprite);
-			
+		r0 = key('esc');
+		if r0 term();
 		
+		r0 = key('left');
+		if r0
+			testactor.dpos = set([-2,0]);
+		
+		r0 = key('right');
+		if r0
+			testactor.dpos = set([2,0]);
+		
+		next_frame();
 	}
 }
 

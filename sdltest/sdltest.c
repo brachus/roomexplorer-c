@@ -24,9 +24,13 @@ int main(void)
 	/* initialize things: */
 
 	SDL_Event e;
-	SDL_Surface *img, *main_display;
+	SDL_Surface *img, *main_display, *tmpd;
 	SDL_Window  *win;
 	SDL_Rect 	pos;
+	SDL_Rect 	pos0;
+	
+	pos0.x = 0;
+	pos0.y = 0;
 	
 	int ani0 = 0;
 	int ani1 = -160;
@@ -55,6 +59,7 @@ int main(void)
 		);
 	
 	main_display = SDL_GetWindowSurface(win);
+	tmpd = SDL_CreateRGBSurface(0, SWIDTH, SHEIGHT, 32, 0, 0, 0, 0);
 	
 	img = IMG_Load("test.png");
 	
@@ -124,9 +129,12 @@ int main(void)
 		pos.x += ani1;
 		ani1 = 0;
 		
+		SDL_FillRect( tmpd, 0, SDL_MapRGBA( tmpd->format, 0xFF, 0xFF, 0xFF, 255 ) );
         SDL_FillRect( main_display, 0, SDL_MapRGB( main_display->format, 0xFF, 0xFF, 0xFF ) );
 		
-		SDL_BlitSurface(img,0 , main_display, &pos);
+		SDL_BlitSurface(img,0 , tmpd, &pos);
+		
+		SDL_BlitSurface(tmpd,0 , main_display, &pos0);
 		
 		SDL_UpdateWindowSurface(win);
 		

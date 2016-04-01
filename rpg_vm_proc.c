@@ -18,6 +18,8 @@
 #include "rpg_sdl.h"
 #include "rpg_input.h"
 
+#include "rpg_render.h"
+
 #include "rpg_vm_proc.h"
 
 
@@ -674,23 +676,39 @@ int vm_proc_step(struct asub_i *in, struct obj_dat *odat, struct var **regs, str
 			if (nargs == 1)
 				in->timer = tvars[0]->dat_int;
 			break;
-			
+		
+		case F_KEY_DOWN:
+		case F_KEY_UP:
 		case F_KEY:
 			doret = 1;
 			
 			retmydat->type = V_INT;
-			
 			retmydat->dat_int = 0;
 						
 			if (nargs == 1)
 			{
 				tvars[1] = get_var_from_cstr(omain->vars, "key_active");
 				
-				if ( keys_match_str(keys->hold, var_get_str(tvars[0])) &&
-					var_get_int(tvars[1]) == 1		)
-					retmydat->dat_int = 1;
+				if (var_get_int(tvars[1]) == 1)
+				{
+					if (in->pc->id == F_KEY)
+					{
+						if (keys_match_str(keys->hold, var_get_str(tvars[0])))
+							retmydat->dat_int = 1;
+					}
 					
-				
+					if (in->pc->id == F_KEY_DOWN)
+					{
+						if (keys_match_str(keys->down, var_get_str(tvars[0])))
+							retmydat->dat_int = 1;
+					}
+					
+					if (in->pc->id == F_KEY_UP)
+					{
+						if (keys_match_str(keys->up, var_get_str(tvars[0])))
+							retmydat->dat_int = 1;
+					}
+				}
 			}
 			
 			break;
@@ -781,15 +799,15 @@ int vm_proc_full(struct asub_dat *in, struct obj_dat *odat, struct var **regs, s
 	return 1;
 }
 
-int update_actors(struct obj_dat *odat)
+int update_actors(struct obj *omain, struct rpg_render *rndr)
 {
-	static struct obj *omain = 0;
-	if (!omain)
-		omain = get_obj_from_cstr(odat, "game","main");
 	
 	struct var *active_actors = get_var_from_cstr(omain->vars, "active_actors");
 	struct var *tmp;
-	struct var *dpos, *pos;
+	struct var *dpos, *pos, *a_dir,
+		*a_ifmov, *a_ifdag, *a_sprtlst,
+		*sprt, *sprt_animate, *sprt_frame,
+		*a_layer, *s_gfx, *s_cntr;
 	
 	struct obj *t_actor = 0;
 	
@@ -805,14 +823,67 @@ int update_actors(struct obj_dat *odat)
 		dpos = get_var_from_cstr(t_actor->vars, "dpos");
 		pos = get_var_from_cstr(t_actor->vars, "pos");
 		
-		/* pos += dpos */
+		var_force_coord(dpos);
+		var_force_coord(pos);
 		
+		a_dir = get_var_from_cstr(t_actor->vars, "dir");
+		a_ifmov = get_var_from_cstr(t_actor->vars, "if_mov");
+		a_ifdag = get_var_from_cstr(t_actor->vars, "if_diag");
+		sprt = get_var_from_cstr(t_actor->vars, "sprt");
+		sprt_animate = get_var_from_cstr(t_actor->vars, "sprt_animate");
+		sprt_frame = get_var_from_cstr(t_actor->vars, "sprt_curframe");
+		a_layer = get_var_from_cstr(t_actor->vars, "layer");
+		a_sprtlst = 0;
+		
+		/* pos += dpos */
 		pos->dat_list->dat_int += dpos->dat_list->dat_int;
 		pos->dat_list->list_next->dat_int +=
 			dpos->dat_list->list_next->dat_int;
-			
-		dpos->dat_list->dat_int = 0; /* dpos = [0,0]]*/
+		
+		/* dpos = [0,0]]*/
+		dpos->dat_list->dat_int = 0; 
 		dpos->dat_list->list_next->dat_int = 0;
+		
+		if (a_ifmov->dat_int == 1)
+			a_sprtlst =  get_var_from_cstr(t_actor->vars, "autodir_sprt_mov");
+		else
+			a_sprtlst =  get_var_from_cstr(t_actor->vars, "autodir_sprt_fxd");
+		/* FIXME: finish auto sprite feature */
+		
+		a_ifmov->dat_int = 0;
+		a_ifdag->dat_int = 0;
+		
+		if (sprt->type == V_NAME && sprt->ob != 0)
+		{
+			/* animation*/
+			if (sprt_animate->dat_int == 1)
+			{
+				
+			}
+			
+			s_gfx = get_var_from_cstr(sprt->ob->vars, "gfx");
+			s_cntr = get_var_from_cstr(sprt->ob->vars, "center");
+			
+			s_gfx = lst_get_idx(s_gfx, 0); /* use 0 idx for now */
+			s_cntr = lst_get_idx(s_cntr, 0); /* use 0 idx for now */
+			
+			/* setup for rendering
+
+				vm_render.add_sprt( actr_layer,
+                    actr_pos, actr_center, actr_gfx);*/
+            
+            vm_render_add_sprt( rndr,
+				a_layer->dat_int,
+            
+				pos->dat_list->dat_int, pos->dat_list->list_next->dat_int,
+				s_cntr->dat_list->dat_int, s_cntr->dat_list->list_next->dat_int,
+				
+				s_gfx->dat_media
+				);
+			
+		}
+		
+		
 		
 		
 		tmp = tmp->list_next;

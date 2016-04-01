@@ -171,3 +171,9 @@ int get_list_length(struct var *lst);
 
 struct var *get_var_from_cstr(struct var *frst, char *cstr);
 struct obj *get_obj_from_cstr(struct obj_dat *odat, char *type, char *name);
+
+struct var *lst_get_idx(struct var *lst, int idx);
+
+void var_force_coord(struct var *in);
+void var_force_str(struct var *in);
+void var_force_int(struct var *in);
