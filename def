@@ -12,7 +12,7 @@ game _
 	.fad_opacity=0;
 	
 	.cam_pos=[0,0];   /* camera vars */
-	.cam_scale=1.0;
+	.cam_scale=[1.0,1.0];
 	
 	/* if not -1, camera focuses on actor,
 	 * keeping it at the center of screen.

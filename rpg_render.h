@@ -29,3 +29,5 @@ void render_sprite(struct r_sprite *in, SDL_Surface *surf, int camx, int camy);
 void vm_render_add_sprt(struct rpg_render *r, int layer, int x, int y, int cx, int cy, struct media_lib_i *gfx);
 
 void vm_render_dorender(struct rpg_render *in, struct obj *omain);
+
+void render_set_cam(struct  obj *omain);

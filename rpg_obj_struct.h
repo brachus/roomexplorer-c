@@ -175,5 +175,9 @@ struct obj *get_obj_from_cstr(struct obj_dat *odat, char *type, char *name);
 struct var *lst_get_idx(struct var *lst, int idx);
 
 void var_force_coord(struct var *in);
+void var_force_fcoord(struct var *in);
 void var_force_str(struct var *in);
 void var_force_int(struct var *in);
+
+
+void var_cpy_coord(struct var *src, struct var *dst);

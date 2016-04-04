@@ -850,6 +850,24 @@ void var_force_coord(struct var *in)
 	vm_err(0,0,0,"var is not an integer coordinate.");
 }
 
+void var_force_fcoord(struct var *in)
+{
+	if (!in)
+		vm_err(0,0,0,"null var.");
+		
+	if (in->type == V_LIST &&
+		in->dat_list != 0 &&
+		in->dat_list->type == V_FLOAT &&
+		in->dat_list->list_next != 0 && 
+		in->dat_list->list_next->type == V_FLOAT)
+		return;
+		
+	printf("var ");
+	str_print(in->name);
+	printf(":\n");
+	vm_err(0,0,0,"var is not an float coordinate.");
+}
+
 void var_force_str(struct var *in)
 {
 	if (!in)
@@ -877,4 +895,15 @@ void var_force_int(struct var *in)
 	str_print(in->name);
 	printf(":\n");
 	vm_err(0,0,0,"var is not int.");
+}
+
+/* works with both int and float */
+void var_cpy_coord(struct var *src, struct var *dst)
+{
+	dst->dat_list->dat_int = src->dat_list->dat_int;
+	dst->dat_list->dat_float = src->dat_list->dat_float;
+	dst->dat_list->list_next->dat_int =
+		src->dat_list->list_next->dat_int;
+	dst->dat_list->list_next->dat_float =
+		src->dat_list->list_next->dat_float;
 }

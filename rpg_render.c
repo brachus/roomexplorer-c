@@ -179,3 +179,24 @@ void vm_render_dorender(struct rpg_render *in, struct obj *omain)
 		
 	}
 }
+
+void render_set_cam(struct  obj *omain)
+{
+	struct var *tmp, *cam_pos, *cam_scale, *cam_actor,
+		*apos, *ascale;
+	
+	cam_actor = get_var_from_cstr(omain->vars, "cam_actor");
+	cam_pos = get_var_from_cstr(omain->vars, "cam_pos");
+	cam_scale = get_var_from_cstr(omain->vars, "cam_scale");
+	
+	var_force_coord(cam_pos);
+	var_force_fcoord(cam_scale);
+	
+	if (cam_actor->type == V_NAME && cam_actor->ob != 0)
+	{
+		apos = get_var_from_cstr(cam_actor->ob->vars, "pos");
+		ascale = get_var_from_cstr(cam_actor->ob->vars, "scale");
+		
+		var_cpy_coord(apos, cam_pos);
+	}
+}

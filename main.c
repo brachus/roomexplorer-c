@@ -93,14 +93,24 @@ int main(int argc, char *argv[])
 	while (1)
 	{
 		handle_events(keys);
+		
 		clear_sdl_win(window, 0,0,0,255);
+		
 		clear_vm_render(renderer);
+		
 		if (!vm_proc_full(asdat, &odat, regs, keys))
 			break;
+			
 		update_actors(omain, renderer);
+		
+		render_set_cam(omain);
+		
 		vm_render_dorender(renderer, omain);
+		
 		update_sdl_win(window);
+		
 		clear_keys(keys);
+		
 		tick_frame(60);
 	}
 	

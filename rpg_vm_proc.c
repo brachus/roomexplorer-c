@@ -22,6 +22,21 @@
 
 #include "rpg_vm_proc.h"
 
+int get_randint(int min, int max)
+{
+	static seeded = 0;
+
+	if (max <= min)
+		return -1;
+	
+	if (!seeded)
+	{
+		srand( time(0) );
+		seeded = 1;
+	}
+	
+	return (rand() % (max-min)) + min;
+}
 
 int var_get_int(struct var *in)
 {
@@ -416,6 +431,28 @@ int do_int_cmp(int cmp_op, int a, int b)
 	return 0;
 }
 
+int do_str_cmp(int cmp_op, struct str *a, struct str *b)
+{
+	switch (cmp_op)
+	{
+	case F_CMP_EQUAL:
+		if (str_cmp(a, b))
+			return 1;
+		break;
+	case F_CMP_NEQUAL:
+		if (!str_cmp(a, b))
+			return 1;
+		break;
+	case F_CMP_GREATER:
+	case F_CMP_LESSER:
+	case F_CMP_LESSEQUAL:
+	case F_CMP_GREATEQUAL:
+		return 0;
+		break;
+	}
+	return 0;
+}
+
 struct obj *get_obj_matching_type(struct obj_dat *in, int itype)
 {
 	struct obj *otmp = in->first;
@@ -553,14 +590,20 @@ int vm_proc_step(struct asub_i *in, struct obj_dat *odat, struct var **regs, str
 			doret = 1;
 			
 			retmydat->type = V_INT;
+			retmydat->dat_int = 0;
 			
-			
-			/* ONLY INTS FOR NOW: */
+			/*only ints and strs for now.*/
 			if (tvars[0]->type == V_INT && tvars[1]->type == V_INT)
 				retmydat->dat_int = do_int_cmp(
 					in->pc->id,
 					tvars[0]->dat_int,
 					tvars[1]->dat_int);
+			
+			else if (tvars[0]->type == V_STR && tvars[1]->type == V_STR)
+				retmydat->dat_int = do_str_cmp(
+					in->pc->id,
+					tvars[0]->dat_str,
+					tvars[1]->dat_str);
 				
 			break;
 		case F_JMP:
@@ -713,13 +756,54 @@ int vm_proc_step(struct asub_i *in, struct obj_dat *odat, struct var **regs, str
 			
 			break;
 		
+		case F_CAM_UNFOCUS:
+			tvars[0] = get_var_from_cstr(omain->vars, "cam_actor");
+			
+			tvars[0]->type = V_INT;
+			tvars[0]->dat_int = -1;
+			
+			break;
+        
+        case F_AACTORS_CLEAR:
+			tvars[0] = get_var_from_cstr(omain->vars, "active_actors");
+			free_var(tvars[0]->dat_list);
+			tvars[0]->dat_list = 0;
+			break;
+		
+		case F_ATMAPS_CLEAR:
+			tvars[0] = get_var_from_cstr(omain->vars, "active_tmaps");
+			free_var(tvars[0]->dat_list);
+			tvars[0]->dat_list = 0;
+			break;
+		
+		case F_KEYS_DISABLE:
+			tvars[0] = get_var_from_cstr(omain->vars, "key_active");
+			tvars[0]->dat_int = 0;
+			break;
+		case F_KEYS_ENABLE:
+			tvars[0] = get_var_from_cstr(omain->vars, "key_active");
+			tvars[0]->dat_int = 1;
+			break;
+		
+		case F_RANDINT:
+			doret = 1;
+			retmydat->type = V_INT;
+			if (nargs == 2)
+				retmydat->dat_int =
+					get_randint(tvars[0]->dat_int, tvars[1]->dat_int);
+				
+			else
+				retmydat->dat_int = -1;
+			
+			break;
+		
 		default:
 			vm_err(0,0,0, "unrecognized function.");
 		}
 		break;
 	}
 	
-	/* copy retdat to return identifier. */
+	/* copy my/retdat to return identifier. */
 	if (in->pc->ret != 0 && doret)
 	{
 		if (retdat)

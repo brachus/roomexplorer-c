@@ -11,6 +11,7 @@ actor testactor
 {
 	.sprt = testsprt;
 	.pos = [0,0];
+	.state = 'left';
 }
 
 
@@ -19,16 +20,20 @@ game main
 
 	.active_actors = [testactor];
 	
+	
+	
 	body
 	{
+
+		
 		r0 = key('esc');
 		if r0 term();
 		
-		r0 = key('left');
+		r0 = cmp_equal('left',testactor.state);
 		if r0
 			testactor.dpos = set([-2,0]);
 		
-		r0 = key('right');
+		r0 = cmp_equal('right',testactor.state);
 		if r0
 			testactor.dpos = set([2,0]);
 		
