@@ -35,6 +35,8 @@ int get_randint(int min, int max)
 		seeded = 1;
 	}
 	
+	max++;
+	
 	return (rand() % (max-min)) + min;
 }
 
@@ -507,7 +509,6 @@ void obj_add_def(struct obj_dat *main, struct obj_dat *defs)
 
 int vm_proc_step(struct asub_i *in, struct obj_dat *odat, struct var **regs, struct input_keys *keys)
 {
-	
 	int ret_val = PR_STEP;
 	int nostep = 0;
 	int ptype = O_NONE;
@@ -528,6 +529,10 @@ int vm_proc_step(struct asub_i *in, struct obj_dat *odat, struct var **regs, str
 	static struct obj *omain = 0;
 	if (!omain)
 		omain = get_obj_from_cstr(odat, "game","main");
+		
+	int use_speed, tmpl, tmpr, tmpu, tmpd, tmpdincr, k;
+	struct var *_key_active, *_win_grab,
+		*_dpos, *_mod4, *_ifmov, *_dir, *_ifdiag;
 	
 	retdat = 0;
 	
@@ -791,7 +796,6 @@ int vm_proc_step(struct asub_i *in, struct obj_dat *odat, struct var **regs, str
 			if (nargs == 2)
 				retmydat->dat_int =
 					get_randint(tvars[0]->dat_int, tvars[1]->dat_int);
-				
 			else
 				retmydat->dat_int = -1;
 			
@@ -799,6 +803,123 @@ int vm_proc_step(struct asub_i *in, struct obj_dat *odat, struct var **regs, str
 		
 		default:
 			vm_err(0,0,0, "unrecognized function.");
+		}
+		break;
+	case O_ACTOR:
+		switch (in->pc->id)
+		{
+		case F_KEY_MOVE:
+			
+			tmpl=0; tmpr=0;
+			tmpu=0; tmpd=0;
+			
+			if (nargs == 1)
+				use_speed = tvars[0]->dat_int;
+			else
+				use_speed = 1;
+			
+			_key_active = get_var_from_cstr(omain->vars, "key_active");
+			_win_grab = get_var_from_cstr(omain->vars, "win_grab");
+			_mod4 = get_var_from_cstr(omain->vars, "mod_4");
+			
+			_dpos = get_var_from_cstr(in->pc->ob->vars, "dpos");
+			var_force_coord(_dpos);
+			_ifmov = get_var_from_cstr(in->pc->ob->vars, "if_mov");
+			var_force_int(_ifmov);
+			_dir = get_var_from_cstr(in->pc->ob->vars, "dir");
+			var_force_str(_dir);
+			_ifdiag = get_var_from_cstr(in->pc->ob->vars, "if_diag");
+			var_force_int(_ifdiag);
+			
+			if ((_key_active->dat_int) && !(_win_grab->dat_int))
+				for (k=0;k<8;k++)
+					switch(keys->hold[k])
+					{
+					case SDLK_LEFT:
+						tmpl=1;
+						break;
+					case SDLK_RIGHT:
+						tmpr=1;
+						break;
+					case SDLK_UP:
+						tmpu=1;
+						break;
+					case SDLK_DOWN:
+						tmpd=1;
+						break;
+					}
+			
+			tmpdincr = use_speed;
+			if (_mod4->dat_int == 3)
+				tmpdincr = use_speed / 2;
+			
+			
+			_ifmov->dat_int = 1;
+			_ifdiag->dat_int = 0;
+			
+			if ((tmpl && tmpr) || (tmpu && tmpd))
+			{
+				var_set_coord(_dpos, 0, 0);
+				_ifmov->dat_int = 0;
+			}
+			else if (tmpu && (!tmpl && !tmpr))
+            {
+				lst_get_idx(_dpos, 1)->dat_int += use_speed;
+				free_str(_dir->dat_str);
+				_dir->dat_str = new_str_from_cstr("u");
+			}
+            else if (tmpd && (!tmpl && !tmpr))
+            {
+				lst_get_idx(_dpos, 1)->dat_int -= use_speed;
+				free_str(_dir->dat_str);
+				_dir->dat_str = new_str_from_cstr("d");
+			}
+            else if (tmpl && (!tmpu && !tmpd))
+            {
+				lst_get_idx(_dpos, 0)->dat_int -= use_speed;
+				free_str(_dir->dat_str);
+				_dir->dat_str = new_str_from_cstr("l");
+			}
+            else if (tmpr && (!tmpu && !tmpd))
+            {
+				lst_get_idx(_dpos, 0)->dat_int += use_speed;
+				free_str(_dir->dat_str);
+				_dir->dat_str = new_str_from_cstr("r");
+			}
+            else if (tmpd && tmpl && !tmpr)
+            {
+				lst_get_idx(_dpos, 1)->dat_int -= tmpdincr;
+				lst_get_idx(_dpos, 0)->dat_int -= tmpdincr;
+                free_str(_dir->dat_str);
+				_dir->dat_str = new_str_from_cstr("dl");
+               _ifdiag->dat_int = 1;}
+            else if (tmpd && !tmpl && tmpr)
+            {
+				lst_get_idx(_dpos, 1)->dat_int -= tmpdincr;
+				lst_get_idx(_dpos, 0)->dat_int += tmpdincr;
+                free_str(_dir->dat_str);
+				_dir->dat_str = new_str_from_cstr("dr");
+                _ifdiag->dat_int = 1;}
+            else if (tmpu && !tmpl && tmpr)
+            {
+				lst_get_idx(_dpos, 1)->dat_int += tmpdincr;
+                lst_get_idx(_dpos, 0)->dat_int += tmpdincr;
+                free_str(_dir->dat_str);
+				_dir->dat_str = new_str_from_cstr("ur");
+                _ifdiag->dat_int = 1;}
+            else if (tmpu && tmpl && !tmpr)
+            {
+				lst_get_idx(_dpos, 1)->dat_int += tmpdincr;
+				lst_get_idx(_dpos, 0)->dat_int -= tmpdincr;
+                 free_str(_dir->dat_str);
+				_dir->dat_str = new_str_from_cstr("ul");
+                _ifdiag->dat_int = 1;
+            }
+            
+            if (!tmpu && !tmpd && !tmpl && !tmpr)
+                _ifmov->dat_int = 0;
+			
+			break;
 		}
 		break;
 	}
@@ -828,7 +949,6 @@ int vm_proc_step(struct asub_i *in, struct obj_dat *odat, struct var **regs, str
 	
 	return ret_val;
 }
-
 
 
 int vm_proc_full(struct asub_dat *in, struct obj_dat *odat, struct var **regs, struct input_keys *keys)
@@ -974,4 +1094,37 @@ int update_actors(struct obj *omain, struct rpg_render *rndr)
 	}
 	
 	return 0;
+}
+
+
+void do_mod(struct obj *omain)
+{
+	struct var *tmp;
+	
+	tmp = get_var_from_cstr(omain->vars,"mod");
+	tmp->dat_int *= -1;
+	
+	tmp = get_var_from_cstr(omain->vars,"mod_4");
+	if (tmp->dat_int == 3)
+		tmp->dat_int = 0;
+	else
+		tmp->dat_int++;
+	
+	tmp = get_var_from_cstr(omain->vars,"mod_8");
+	if (tmp->dat_int == 7)
+		tmp->dat_int = 0;
+	else
+		tmp->dat_int++;
+	
+	tmp = get_var_from_cstr(omain->vars,"mod_16");
+	if (tmp->dat_int == 15)
+		tmp->dat_int = 0;
+	else
+		tmp->dat_int++;
+	
+	tmp = get_var_from_cstr(omain->vars,"mod_32");
+	if (tmp->dat_int == 31)
+		tmp->dat_int = 0;
+	else
+		tmp->dat_int++;
 }

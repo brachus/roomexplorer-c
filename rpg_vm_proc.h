@@ -43,3 +43,4 @@ int vm_proc_step(struct asub_i *in, struct obj_dat *odat, struct var **regs, str
 int vm_proc_full(struct asub_dat *in, struct obj_dat *odat, struct var **regs, struct input_keys *keys);
 
 int update_actors(struct obj *omain, struct rpg_render *rndr);
+void do_mod(struct obj *omain);

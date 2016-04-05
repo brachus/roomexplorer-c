@@ -71,7 +71,9 @@ void ml_add_img(struct media_lib *in, struct str *fn)
 void md_lib_loadall(struct media_lib *in)
 {
 	struct media_lib_i *tmp = in->first;
-	SDL_BlendMode bmd = SDL_BLENDMODE_NONE;
+	
+	SDL_BlendMode bmd = SDL_BLENDMODE_BLEND;
+	
 	char *fn;
 	
 	while (tmp != 0)

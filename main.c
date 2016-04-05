@@ -92,6 +92,8 @@ int main(int argc, char *argv[])
 	
 	while (1)
 	{
+		do_mod(omain);
+		
 		handle_events(keys);
 		
 		clear_sdl_win(window, 0,0,0,255);
@@ -111,7 +113,7 @@ int main(int argc, char *argv[])
 		
 		clear_keys(keys);
 		
-		tick_frame(60);
+		tick_frame(45);
 	}
 	
 	sdl_term();

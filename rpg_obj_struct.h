@@ -179,5 +179,6 @@ void var_force_fcoord(struct var *in);
 void var_force_str(struct var *in);
 void var_force_int(struct var *in);
 
+void var_set_coord(struct var *in, int x, int y);
 
 void var_cpy_coord(struct var *src, struct var *dst);

@@ -907,3 +907,9 @@ void var_cpy_coord(struct var *src, struct var *dst)
 	dst->dat_list->list_next->dat_float =
 		src->dat_list->list_next->dat_float;
 }
+
+void var_set_coord(struct var *in, int x, int y)
+{
+	in->dat_list->dat_int = x;
+	in->dat_list->list_next->dat_int = y;
+}

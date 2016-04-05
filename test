@@ -14,28 +14,26 @@ actor testactor
 	.state = 'left';
 }
 
+actor testactor1
+{
+	.sprt = testsprt;
+	.pos = [40,0];
+}
+
 
 game main
 {
 
-	.active_actors = [testactor];
+	.active_actors = [testactor, testactor1];
 	
 	
 	
 	body
 	{
-
+		testactor.key_move(2);
 		
 		r0 = key('esc');
 		if r0 term();
-		
-		r0 = cmp_equal('left',testactor.state);
-		if r0
-			testactor.dpos = set([-2,0]);
-		
-		r0 = cmp_equal('right',testactor.state);
-		if r0
-			testactor.dpos = set([2,0]);
 		
 		next_frame();
 	}

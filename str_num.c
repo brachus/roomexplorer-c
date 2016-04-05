@@ -45,6 +45,15 @@ struct str *create_str()
 	return n;
 };
 
+struct str *new_str_from_cstr(char *in)
+{
+	struct str *n = create_str();
+	
+	str_append_cstr(n, in);
+	
+	return n;
+};
+
 void str_append_char(struct str* in_str, char in)
 {
 	if (!in_str->first || in_str->length == 0)

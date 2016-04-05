@@ -1,5 +1,11 @@
 
 
+/* how to add an obj:
+ * 	add obj enum here.
+ * 	add enum check/type str to obj_do_itype())
+ *  add obj to def
+ */
+
 
 /* function id's 
 

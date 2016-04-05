@@ -25,6 +25,7 @@ struct num
 
 struct str new_str(char *in);
 struct str *create_str();
+struct str *new_str_from_cstr(char *in);
 void str_append_char(struct str* in_str, char in);
 void str_append_cstr(struct str* in_str, char *in);
 void str_append_int(struct str* tstr, int tint);
