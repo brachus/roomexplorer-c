@@ -441,6 +441,14 @@ void obj_do_itype(struct obj *in)
 		in->itype = O_SPRT;
 	else if (  str_cmp_cstr(in->type, "actor")  )
 		in->itype = O_ACTOR;
+	else if (  str_cmp_cstr(in->type, "tilemap")  )
+		in->itype = O_TMAP;
+	else if (  str_cmp_cstr(in->type, "snd")  )
+		in->itype = O_SND;
+	else if (  str_cmp_cstr(in->type, "inventory")  )
+		in->itype = O_INV;
+	else if (  str_cmp_cstr(in->type, "item")  )
+		in->itype = O_ITEM;
 	else
 		in->itype = O_NONE;
 }

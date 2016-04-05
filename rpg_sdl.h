@@ -3,7 +3,7 @@
 #define SCREENWIDTH 320
 #define SCREENHEIGHT 240
 
-#define SSCALE 1
+#define SSCALE 2
 
 
 struct sdl_win

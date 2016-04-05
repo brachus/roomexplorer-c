@@ -104,6 +104,7 @@ int main(int argc, char *argv[])
 			break;
 			
 		update_actors(omain, renderer);
+		update_tmaps(omain, renderer);
 		
 		render_set_cam(omain);
 		

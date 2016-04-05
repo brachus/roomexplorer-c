@@ -76,5 +76,10 @@ enum
 	O_NONE,
 	O_GAME,
 	O_SPRT,
-	O_ACTOR
+	O_ACTOR,
+	O_TMAP,
+	O_SND,
+	O_WIN,
+	O_INV,
+	O_ITEM
 };

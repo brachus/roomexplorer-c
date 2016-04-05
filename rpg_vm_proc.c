@@ -920,6 +920,13 @@ int vm_proc_step(struct asub_i *in, struct obj_dat *odat, struct var **regs, str
                 _ifmov->dat_int = 0;
 			
 			break;
+			
+			
+		case F_CAM_FOCUS:
+			tvars[0] = get_var_from_cstr(omain->vars,"cam_actor");
+			tvars[0]->type = V_NAME;
+			tvars[0]->ob = in->pc->ob;
+			break;
 		}
 		break;
 	}
@@ -1096,6 +1103,44 @@ int update_actors(struct obj *omain, struct rpg_render *rndr)
 	return 0;
 }
 
+
+void update_tmaps(struct obj *omain, struct rpg_render *rndr)
+{
+	struct var *tmp, *layer, *pos, *arr, *gfx;
+	struct obj *t_tmap;
+	
+	tmp = get_var_from_cstr(omain->vars, "active_tmaps");
+	
+	tmp=tmp->dat_list;
+	
+	while (tmp != 0)
+	{
+		t_tmap = tmp->ob;
+		if (!t_tmap)
+			break;
+		
+		layer = get_var_from_cstr(t_tmap->vars, "layer");
+		var_force_int(layer);
+		
+		pos = get_var_from_cstr(t_tmap->vars, "pos");
+		var_force_coord(pos);
+		
+		arr = get_var_from_cstr(t_tmap->vars, "array");
+		
+		gfx = get_var_from_cstr(t_tmap->vars, "gfx");
+			
+		vm_render_add_tmap(
+			rndr,
+			layer->dat_int,
+			pos->dat_list->dat_int,
+			pos->dat_list->list_next->dat_int,
+			arr,
+			gfx
+			);
+		
+		tmp = tmp->list_next;
+	}	
+}
 
 void do_mod(struct obj *omain)
 {
