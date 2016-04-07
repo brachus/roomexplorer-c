@@ -168,7 +168,7 @@ void render_tmap(struct r_tmap *in, SDL_Surface *surf, int camx, int camy)
 
 void vm_render_add_sprt(struct rpg_render *r, int layer, int x, int y, int cx, int cy, struct media_lib_i *gfx)
 {
-	struct r_sprite *tmp, *nxt;
+	struct r_sprite *tmp, *nxt, *prev;
 	
 	if (r->sprites[layer] == 0)
 		r->sprites[layer] = new_r_sprite(x,y,cx,cy,gfx);
@@ -176,23 +176,31 @@ void vm_render_add_sprt(struct rpg_render *r, int layer, int x, int y, int cx, i
 	else
 	{
 		tmp = r->sprites[layer];
-		
-		/* list runs from highest to lowerest y value. */
+		prev=0;
+		/* list runs from highest to lowest y value. */
 		while (tmp != 0)
 		{
-			/* insert item after first one with lesser y value. */
+			/* insert item *before* first one with lesser y value. */
 			if (y > tmp->y)
 			{
-				nxt = tmp->next;
-				tmp->next = new_r_sprite(x,y,cx,cy,gfx);
-				tmp->next->next = nxt;
+				if (!prev)
+				{
+					r->sprites[layer] = new_r_sprite(x,y,cx,cy,gfx);
+					r->sprites[layer]->next = tmp;
+				}
+				else
+				{
+					prev->next = new_r_sprite(x,y,cx,cy,gfx);
+					prev->next->next = tmp;
+				}
+				break;
 			}
 			else if (tmp->next == 0)
 			{
 				tmp->next = new_r_sprite(x,y,cx,cy,gfx);
 				break;
 			}
-			
+			prev = tmp;
 			tmp = tmp->next;
 		}
 	}
@@ -224,7 +232,7 @@ void vm_render_add_tmap( struct rpg_render *r,int layer,int x, int y, struct var
 
 void vm_render_dorender(struct rpg_render *in, struct obj *omain)
 {
-	struct var *cam_pos, *layer_opacity, *opacity;
+	struct var *cam_pos, *layer_opacity, *opacity, *f_rgb, *f_o, *tmp;
 	struct r_sprite *rtmp;
 	struct r_tmap *ttmp;
 	int i, j, camx, camy;
@@ -284,6 +292,20 @@ void vm_render_dorender(struct rpg_render *in, struct obj *omain)
 		}
 		
 	}
+	
+	/* render fade overlay */
+	f_rgb = get_var_from_cstr(omain->vars, "fad_color");
+	f_o = get_var_from_cstr(omain->vars, "fad_opacity");
+		
+	fill_surf_rgba(
+		in->win->t_surf,
+		lst_get_idx(f_rgb, 0)->dat_int,
+		lst_get_idx(f_rgb, 1)->dat_int,
+		lst_get_idx(f_rgb, 2)->dat_int,
+		f_o->dat_int
+		);
+		
+	blit_surf(in->win->t_surf, in->win->m_surf,0,0);
 }
 
 void render_set_cam(struct  obj *omain)

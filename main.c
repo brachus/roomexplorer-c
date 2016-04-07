@@ -40,6 +40,7 @@ int main(int argc, char *argv[])
 	struct input_keys *keys = new_input_keys();
 	struct rpg_render *renderer;
 	struct obj *omain;
+	struct fad_dat *fdat = new_fad_dat();
 	
 	if (argc > 1)
 		str_append_cstr(fn, argv[1]);
@@ -100,7 +101,9 @@ int main(int argc, char *argv[])
 		
 		clear_vm_render(renderer);
 		
-		if (!vm_proc_full(asdat, &odat, regs, keys))
+		proc_fad_dat(fdat);
+		
+		if (!vm_proc_full(asdat, &odat, regs, keys, fdat))
 			break;
 			
 		update_actors(omain, renderer);

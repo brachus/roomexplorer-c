@@ -507,7 +507,7 @@ void obj_add_def(struct obj_dat *main, struct obj_dat *defs)
 }
 
 
-int vm_proc_step(struct asub_i *in, struct obj_dat *odat, struct var **regs, struct input_keys *keys)
+int vm_proc_step(struct asub_i *in, struct obj_dat *odat, struct var **regs, struct input_keys *keys, struct fad_dat *fdat)
 {
 	int ret_val = PR_STEP;
 	int nostep = 0;
@@ -958,7 +958,7 @@ int vm_proc_step(struct asub_i *in, struct obj_dat *odat, struct var **regs, str
 }
 
 
-int vm_proc_full(struct asub_dat *in, struct obj_dat *odat, struct var **regs, struct input_keys *keys)
+int vm_proc_full(struct asub_dat *in, struct obj_dat *odat, struct var **regs, struct input_keys *keys, struct fad_dat *fdat)
 {
 	struct asub_i *stmp, *prev;
 	int step, rval;
@@ -979,7 +979,7 @@ int vm_proc_full(struct asub_dat *in, struct obj_dat *odat, struct var **regs, s
 			}
 			else
 			{
-				rval = vm_proc_step(stmp, odat, regs, keys);
+				rval = vm_proc_step(stmp, odat, regs, keys, fdat);
 				
 				switch(rval)
 				{
@@ -1172,4 +1172,113 @@ void do_mod(struct obj *omain)
 		tmp->dat_int = 0;
 	else
 		tmp->dat_int++;
+}
+
+struct fad_i *new_fad_i()
+{
+	struct fad_i *n = malloc(sizeof(struct fad_i));
+	
+	n->type = 0;
+	n->target=0;
+	n->incr = 0;
+	n->goal = 0;
+	n->frames=0;
+	n->next=0;
+	
+	return n;
+};
+
+struct fad_dat *new_fad_dat()
+{
+	struct fad_dat *n = malloc(sizeof(struct fad_dat));
+	
+	n->first=0;
+	n->last=0;
+	
+	return n;
+};
+
+void add_fad_i(struct fad_dat *in, struct var *target, struct var *goal, int frames)
+{
+	if (frames < 1 || !in || !target || !goal)
+		return;
+		
+	if (!in->first)
+	{
+		in->first = new_fad_i();
+		in->last = in->first;
+	}
+	else
+	{
+		in->last->next = new_fad_i();
+		in->last = in->last->next;
+	}
+	
+	in->last->target = target;
+	in->last->type = target->type;
+	in->last->goal = goal;
+	
+	in->last->incr = new_var();
+	
+	in->last->incr->type = in->last->type;
+	
+	if (in->last->type == V_INT)
+		in->last->incr->dat_int =
+			(in->last->goal->dat_int - in->last->target->dat_int) / frames;
+	else if (in->last->type == V_FLOAT)
+		in->last->incr->dat_float =
+			(in->last->goal->dat_float - in->last->target->dat_float) / frames;
+	else
+		vm_err(0,0,0,"fade mechanism only supports ints and floats right now. ");
+	
+}
+
+void proc_fad_dat(struct fad_dat *in)
+{
+	struct fad_i *cur, *prev;
+	int dormv;
+	
+	prev=0;
+	cur=in->first;
+	while (cur != 0)
+	{
+		dormv=0;
+		
+		if (cur->type == V_INT)
+		{
+			cur->target->dat_int += cur->incr->dat_int;
+			cur->frames--; /* correct ? */
+			
+			if (cur->frames <= 0)
+			{
+				cur->target->dat_int = cur->goal->dat_int;
+				dormv=1;
+			}
+		}
+		
+		if (dormv)
+		{
+			/* remove from fad dat */
+			if (!prev)
+				in->first = cur->next;
+			else
+				prev->next = cur->next;
+			cur = cur->next;
+			free(cur);
+			
+			/* recalc last*/
+			in->last = in->first;
+			while (in->last!=0)
+			{
+				if (!in->last->next)
+					break;
+				in->last = in->last->next;
+			}
+			
+			continue;
+		}
+		
+		prev = cur;
+		cur = cur->next;
+	}
 }

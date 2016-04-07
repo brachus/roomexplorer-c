@@ -110,7 +110,7 @@ tilemap labyrinth2
 sprite testsprt
 {
 	.layer = 0;
-	.center = [[0,0]];
+	.center = [[8,8]];
 	.gfx = {img 'test.png'};
 }
 
@@ -130,6 +130,8 @@ actor testactor1
 
 game main
 {
+	.fad_color = [100,100,200];
+	.fad_opacity = 100;
 
 	.active_actors = [testactor, testactor1];
 	.active_tmaps = [labyrinth2];
@@ -138,7 +140,7 @@ game main
 	
 	body
 	{
-		testactor.key_move(1);
+		testactor.key_move(2);
 		
 		r0 = key('space');
 		if r0
